@@ -1,8 +1,13 @@
+import type { Metadata } from "next"
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 
 import "@workspace/ui/globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@workspace/ui/components/sonner"
+import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
+
+import { ThemeProvider } from "@/components/theme-provider"
+import { FecStoreProvider } from "@/lib/fec/store"
 
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
@@ -16,6 +21,12 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+export const metadata: Metadata = {
+  title: "Clair · La santé de votre entreprise, en clair",
+  description:
+    "Importez votre FEC, obtenez en quelques secondes un tableau de bord clair pour piloter votre entreprise : ventes, charges, trésorerie, marges, et actions concrètes à mener.",
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fr"
       suppressHydrationWarning
       className={cn(
         "antialiased",
@@ -33,8 +44,13 @@ export default function RootLayout({
         spaceGroteskHeading.variable
       )}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="min-h-svh bg-background">
+        <ThemeProvider>
+          <TooltipProvider delay={150}>
+            <FecStoreProvider>{children}</FecStoreProvider>
+          </TooltipProvider>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   )
