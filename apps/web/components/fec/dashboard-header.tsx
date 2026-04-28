@@ -1,8 +1,5 @@
 "use client"
 
-import { Calendar } from "lucide-react"
-import { usePathname } from "next/navigation"
-
 import { Badge } from "@workspace/ui/components/badge"
 import {
   Breadcrumb,
@@ -12,9 +9,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@workspace/ui/components/breadcrumb"
+import { Calendar } from "lucide-react"
+import { usePathname } from "next/navigation"
 
-import { useFecStore } from "@/lib/fec/store"
 import { formatShortDate } from "@/lib/fec/format"
+import { useFecStore } from "@/lib/fec/store"
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Vue d'ensemble",

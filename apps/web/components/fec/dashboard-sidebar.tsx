@@ -1,5 +1,28 @@
 "use client"
 
+import { Button } from "@workspace/ui/components/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@workspace/ui/components/sidebar"
 import {
   ArrowLeftRight,
   CircleDollarSign,
@@ -16,32 +39,9 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@workspace/ui/components/sidebar"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@workspace/ui/components/dialog"
-import { Button } from "@workspace/ui/components/button"
-
-import { useFecStore } from "@/lib/fec/store"
+import { FormattedNumber } from "@/components/fec/formatted-number"
 import { formatShortDate } from "@/lib/fec/format"
+import { useFecStore } from "@/lib/fec/store"
 
 interface NavItem {
   href: string
@@ -167,7 +167,7 @@ export function DashboardSidebar() {
               {formatShortDate(data.period.endDate)}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {String(data.meta.rowCount)} écritures
+              <FormattedNumber value={data.meta.rowCount} /> écritures
             </p>
 
             <Dialog>

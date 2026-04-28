@@ -1,12 +1,11 @@
 "use client"
 
-import { ArrowRight, FileSpreadsheet, Loader2, Sparkles } from "lucide-react"
-import Link from "next/link"
-import { Suspense, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
+import { ArrowRight, FileSpreadsheet, Loader2, Sparkles } from "lucide-react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect } from "react"
 
 import { useFecStore } from "@/lib/fec/store"
 
@@ -18,9 +17,10 @@ function DemoAutoLoader() {
   useEffect(() => {
     if (!hydrated) return
     if (searchParams.get("demo") === "1" && importState.status === "idle") {
-      void importDemo().then(() => {
+      void (async () => {
+        await importDemo()
         router.replace("/dashboard")
-      })
+      })()
     }
   }, [hydrated, searchParams, importState.status, importDemo, router])
 

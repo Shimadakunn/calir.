@@ -1,21 +1,21 @@
 "use client"
 
 import {
-  CheckCircle2,
-  CircleAlert,
-  Lightbulb,
-  TriangleAlert,
-} from "lucide-react"
-
-import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import {
+  CheckCircle2,
+  CircleAlert,
+  Lightbulb,
+  TriangleAlert,
+} from "lucide-react"
 
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import { FormattedNumber } from "@/components/fec/formatted-number"
 import { InsightCard } from "@/components/fec/insight-card"
 import { useFecStore } from "@/lib/fec/store"
 
@@ -150,7 +150,7 @@ function SeverityStat({
           <Icon className={`size-4 ${styles[tone].text}`} />
         </div>
         <p className="mt-2 font-heading text-3xl font-bold tabular-nums">
-          {String(count)}
+          <FormattedNumber value={count} />
         </p>
       </CardContent>
     </Card>

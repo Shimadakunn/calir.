@@ -1,14 +1,13 @@
-import type { ReactNode } from "react"
-
 import { Separator } from "@workspace/ui/components/separator"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar"
+import type { ReactNode } from "react"
 
-import { DashboardSidebar } from "@/components/fec/dashboard-sidebar"
 import { DashboardHeader } from "@/components/fec/dashboard-header"
+import { DashboardSidebar } from "@/components/fec/dashboard-sidebar"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (

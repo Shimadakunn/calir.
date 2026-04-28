@@ -1,7 +1,5 @@
 "use client"
 
-import { CalendarClock, ChartLine, HandCoins, Truck } from "lucide-react"
-
 import {
   Card,
   CardContent,
@@ -9,12 +7,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { CalendarClock, ChartLine, HandCoins, Truck } from "lucide-react"
 
 import { CounterpartyTable } from "@/components/fec/counterparty-table"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
+import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro, formatPercent } from "@/lib/fec/format"
 
 export default function FournisseursPage() {
   const { data } = useFecStore()
@@ -51,7 +54,7 @@ export default function FournisseursPage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Fournisseurs identifiés"
-          value={String(topSuppliers.length)}
+          value={<FormattedNumber value={topSuppliers.length} />}
           icon={Truck}
           hint="Comptes auxiliaires actifs"
         />
@@ -63,13 +66,17 @@ export default function FournisseursPage() {
         />
         <KpiCard
           label="Dettes fournisseurs"
-          value={formatEuro(kpi.supplierPayables)}
+          value={<FormattedCurrency value={kpi.supplierPayables} />}
           icon={HandCoins}
           hint="Solde à payer"
         />
         <KpiCard
           label="Délai paiement (DPO)"
-          value={`${dpo.toFixed(0)} j`}
+          value={
+            <>
+              <FormattedNumber value={dpo} /> j
+            </>
+          }
           icon={CalendarClock}
           hint={
             dpo < 30

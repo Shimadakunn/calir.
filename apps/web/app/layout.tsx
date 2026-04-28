@@ -1,10 +1,10 @@
-import type { Metadata } from "next"
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
-
-import "@workspace/ui/globals.css"
 import { Toaster } from "@workspace/ui/components/sonner"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
+
+import "@workspace/ui/globals.css"
 import { cn } from "@workspace/ui/lib/utils"
+import type { Metadata } from "next"
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 
 import { ThemeProvider } from "@/components/theme-provider"
 import { FecStoreProvider } from "@/lib/fec/store"

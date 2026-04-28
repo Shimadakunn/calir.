@@ -1,7 +1,7 @@
 "use client"
 
+import { FormattedCurrency } from "@/components/fec/formatted-number"
 import type { TopCounterparty } from "@/lib/fec/analytics"
-import { formatEuro } from "@/lib/fec/format"
 
 interface TopListProps {
   items: TopCounterparty[]
@@ -38,7 +38,7 @@ export function TopList({ items, emptyLabel, unit, showCount }: TopListProps) {
               </div>
               <div className="text-right">
                 <p className="font-mono text-sm font-semibold tabular-nums">
-                  {formatEuro(item.amount)}
+                  <FormattedCurrency value={item.amount} />
                 </p>
                 {unit ? (
                   <p className="text-[10px] text-muted-foreground">{unit}</p>

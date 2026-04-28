@@ -1,7 +1,7 @@
 "use client"
 
+import { FormattedCurrency } from "@/components/fec/formatted-number"
 import type { CategoryBreakdown } from "@/lib/fec/analytics"
-import { formatEuro } from "@/lib/fec/format"
 
 export function CategoryBarList({ items }: { items: CategoryBreakdown[] }) {
   if (items.length === 0) {
@@ -25,7 +25,9 @@ export function CategoryBarList({ items }: { items: CategoryBreakdown[] }) {
               <span className="font-medium">{item.label}</span>
             </div>
             <div className="flex items-baseline gap-2 font-mono tabular-nums">
-              <span className="font-semibold">{formatEuro(item.amount)}</span>
+              <span className="font-semibold">
+                <FormattedCurrency value={item.amount} />
+              </span>
               <span className="text-xs text-muted-foreground">
                 {item.share.toFixed(1)}%
               </span>

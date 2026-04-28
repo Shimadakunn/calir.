@@ -1,7 +1,5 @@
 "use client"
 
-import { CalendarClock, ChartLine, CircleAlert, Users } from "lucide-react"
-
 import {
   Card,
   CardContent,
@@ -9,12 +7,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { CalendarClock, ChartLine, CircleAlert, Users } from "lucide-react"
 
 import { CounterpartyTable } from "@/components/fec/counterparty-table"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
+import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro, formatPercent } from "@/lib/fec/format"
 
 export default function ClientsPage() {
   const { data } = useFecStore()
@@ -57,7 +60,7 @@ export default function ClientsPage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Clients identifiés"
-          value={String(topCustomers.length)}
+          value={<FormattedNumber value={topCustomers.length} />}
           icon={Users}
           hint="Comptes auxiliaires actifs"
         />
@@ -77,10 +80,18 @@ export default function ClientsPage() {
         />
         <KpiCard
           label="Délai de paiement (DSO)"
-          value={`${dso.toFixed(0)} j`}
+          value={
+            <>
+              <FormattedNumber value={dso} /> j
+            </>
+          }
           icon={CalendarClock}
           tone={dso > 60 ? "warning" : "default"}
-          hint={`Créances : ${formatEuro(kpi.customerReceivables)}`}
+          hint={
+            <>
+              Créances : <FormattedCurrency value={kpi.customerReceivables} />
+            </>
+          }
         />
       </section>
 

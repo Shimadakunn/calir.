@@ -1,16 +1,15 @@
 "use client"
 
+import { Card, CardContent } from "@workspace/ui/components/card"
+import { cn } from "@workspace/ui/lib/utils"
 import { ArrowDown, ArrowRight, ArrowUp, type LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 
-import { Card, CardContent } from "@workspace/ui/components/card"
-import { cn } from "@workspace/ui/lib/utils"
-
 export interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon?: LucideIcon
-  hint?: string
+  hint?: ReactNode
   trend?: {
     direction: "up" | "down" | "neutral"
     text: string

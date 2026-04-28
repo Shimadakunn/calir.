@@ -18,6 +18,7 @@ import {
   REVENUE_CATEGORIES,
   type RevenueCategory,
 } from "./accounts"
+import { formatEuro } from "./format"
 import type { FecEntry, FecParseResult } from "./types"
 
 export interface PeriodInfo {
@@ -328,7 +329,10 @@ function computeExpenseBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
 
   items.sort((a, b) => b.amount - a.amount)
   return items.map((it, idx) => ({
-    ...it,
+    key: it.key,
+    label: it.label,
+    amount: it.amount,
+    share: it.share,
     fill: CHART_COLORS[idx % CHART_COLORS.length]!,
   }))
 }
@@ -364,7 +368,10 @@ function computeRevenueBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
 
   items.sort((a, b) => b.amount - a.amount)
   return items.map((it, idx) => ({
-    ...it,
+    key: it.key,
+    label: it.label,
+    amount: it.amount,
+    share: it.share,
     fill: CHART_COLORS[idx % CHART_COLORS.length]!,
   }))
 }
@@ -668,15 +675,6 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
     cashByAccount,
     warnings,
   }
-}
-
-// Utilitaire de formatage utilise dans les insights
-function formatEuro(value: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 // Re-export des types et constantes pour les composants

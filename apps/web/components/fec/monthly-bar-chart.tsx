@@ -1,21 +1,18 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts"
-
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts"
 
 import type { MonthlyPoint } from "@/lib/fec/analytics"
+import { formatEuroCompact, formatEuroExact } from "@/lib/fec/format"
 
 function formatEuroAxis(value: number): string {
-  if (Math.abs(value) >= 1_000_000)
-    return `${(value / 1_000_000).toFixed(1)}M €`
-  if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}k €`
-  return `${String(Math.round(value))} €`
+  return formatEuroCompact(value)
 }
 
 function tooltipFormatter(value: unknown, name: unknown) {
@@ -26,11 +23,7 @@ function tooltipFormatter(value: unknown, name: unknown) {
         {String(name ?? "")}
       </span>
       <span className="font-mono font-medium">
-        {new Intl.NumberFormat("fr-FR", {
-          style: "currency",
-          currency: "EUR",
-          maximumFractionDigits: 0,
-        }).format(Number.isFinite(numeric) ? numeric : 0)}
+        {formatEuroExact(Number.isFinite(numeric) ? numeric : 0)}
       </span>
     </div>
   )

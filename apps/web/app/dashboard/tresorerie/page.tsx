@@ -1,6 +1,14 @@
 "use client"
 
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
+import {
   Banknote,
   CalendarClock,
   Landmark,
@@ -9,23 +17,17 @@ import {
 } from "lucide-react"
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import { Separator } from "@workspace/ui/components/separator"
-
-import {
   CashBalanceChart,
   CashFlowChart,
 } from "@/components/fec/cash-balance-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { TopList } from "@/components/fec/top-list"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro } from "@/lib/fec/format"
 
 export default function TresoreriePage() {
   const { data } = useFecStore()
@@ -71,7 +73,7 @@ export default function TresoreriePage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Solde actuel"
-          value={formatEuro(kpi.cashBalance)}
+          value={<FormattedCurrency value={kpi.cashBalance} />}
           icon={Banknote}
           tone={
             kpi.cashBalance < 0
@@ -84,20 +86,25 @@ export default function TresoreriePage() {
         />
         <KpiCard
           label="Solde min."
-          value={formatEuro(minBalance)}
+          value={<FormattedCurrency value={minBalance} />}
           icon={TrendingDown}
           hint="Point bas atteint"
           tone={minBalance < 0 ? "danger" : "default"}
         />
         <KpiCard
           label="Solde max."
-          value={formatEuro(maxBalance)}
+          value={<FormattedCurrency value={maxBalance} />}
           icon={TrendingUp}
           hint="Point haut atteint"
         />
         <KpiCard
           label="Mois en flux négatif"
-          value={`${String(negativeMonths)} / ${String(monthly.length)}`}
+          value={
+            <>
+              <FormattedNumber value={negativeMonths} /> /{" "}
+              <FormattedNumber value={monthly.length} />
+            </>
+          }
           icon={CalendarClock}
           hint="Sorties > entrées"
           tone={negativeMonths > monthly.length / 2 ? "warning" : "default"}
@@ -143,7 +150,7 @@ export default function TresoreriePage() {
                   DSO · Vous payent vos clients
                 </p>
                 <p className="font-heading text-2xl font-bold tabular-nums">
-                  {dso.toFixed(0)}{" "}
+                  <FormattedNumber value={dso} />{" "}
                   <span className="text-sm text-muted-foreground">jours</span>
                 </p>
               </div>
@@ -163,7 +170,7 @@ export default function TresoreriePage() {
                   DPO · Vous payez vos fournisseurs
                 </p>
                 <p className="font-heading text-2xl font-bold tabular-nums">
-                  {dpo.toFixed(0)}{" "}
+                  <FormattedNumber value={dpo} />{" "}
                   <span className="text-sm text-muted-foreground">jours</span>
                 </p>
               </div>

@@ -1,17 +1,16 @@
 "use client"
 
-import { useMemo } from "react"
-import { Cell, Label, Pie, PieChart } from "recharts"
-
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
+import { useMemo } from "react"
+import { Cell, Label, Pie, PieChart } from "recharts"
 
 import type { CategoryBreakdown } from "@/lib/fec/analytics"
-import { formatEuroCompact } from "@/lib/fec/format"
+import { formatEuroCompact, formatEuroExact } from "@/lib/fec/format"
 
 interface CategoryDonutChartProps {
   data: CategoryBreakdown[]
@@ -26,11 +25,7 @@ function tooltipFormatter(value: unknown, name: unknown) {
     <div className="flex w-full items-center justify-between gap-4">
       <span className="text-muted-foreground">{String(name ?? "")}</span>
       <span className="font-mono font-medium">
-        {new Intl.NumberFormat("fr-FR", {
-          style: "currency",
-          currency: "EUR",
-          maximumFractionDigits: 0,
-        }).format(Number.isFinite(numeric) ? numeric : 0)}
+        {formatEuroExact(Number.isFinite(numeric) ? numeric : 0)}
       </span>
     </div>
   )
@@ -93,6 +88,7 @@ export function CategoryDonutChart({
                     textAnchor="middle"
                     dominantBaseline="middle"
                   >
+                    <title>{formatEuroExact(total)}</title>
                     <tspan
                       x={viewBox.cx}
                       y={viewBox.cy - 6}

@@ -1,7 +1,5 @@
 "use client"
 
-import { Briefcase, Building2, Receipt, ReceiptText } from "lucide-react"
-
 import {
   Card,
   CardContent,
@@ -9,15 +7,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { Briefcase, Building2, Receipt, ReceiptText } from "lucide-react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import { FormattedCurrency } from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyBarChart } from "@/components/fec/monthly-bar-chart"
 import { TopList } from "@/components/fec/top-list"
+import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro, formatPercent } from "@/lib/fec/format"
 
 export default function ChargesPage() {
   const { data } = useFecStore()
@@ -46,26 +46,26 @@ export default function ChargesPage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Charges totales"
-          value={formatEuro(kpi.expenses)}
+          value={<FormattedCurrency value={kpi.expenses} />}
           icon={ReceiptText}
           hint={`${expenseRatio.toFixed(0)}% du CA`}
         />
         <KpiCard
           label="Charges mensuelles moy."
-          value={formatEuro(monthlyAvgExpenses)}
+          value={<FormattedCurrency value={monthlyAvgExpenses} />}
           icon={Receipt}
           hint="Moyenne sur la période"
         />
         <KpiCard
           label="Salaires + charges sociales"
-          value={formatEuro(kpi.payroll)}
+          value={<FormattedCurrency value={kpi.payroll} />}
           icon={Briefcase}
           hint={`${formatPercent(payrollRatio)} du CA`}
           tone={payrollRatio > 60 ? "warning" : "default"}
         />
         <KpiCard
           label="Services extérieurs"
-          value={formatEuro(kpi.externalCharges)}
+          value={<FormattedCurrency value={kpi.externalCharges} />}
           icon={Building2}
           hint={`${formatPercent(externalRatio)} du CA`}
         />

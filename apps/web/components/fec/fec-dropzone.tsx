@@ -1,6 +1,10 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
+import { Card } from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   CloudUpload,
   FileSpreadsheet,
@@ -10,16 +14,11 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 
-import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
-import { Card } from "@workspace/ui/components/card"
-import { Separator } from "@workspace/ui/components/separator"
-import { cn } from "@workspace/ui/lib/utils"
-
-import { useFecStore } from "@/lib/fec/store"
 import { formatFileSize } from "@/lib/fec/format"
+import { useFecStore } from "@/lib/fec/store"
 
 const ACCEPTED_EXTENSIONS = [".txt", ".csv", ".tsv"]
 

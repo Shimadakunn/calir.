@@ -1,5 +1,8 @@
 "use client"
 
+import { Badge } from "@workspace/ui/components/badge"
+import { Card, CardContent } from "@workspace/ui/components/card"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   ArrowRight,
   CheckCircle2,
@@ -7,10 +10,6 @@ import {
   Lightbulb,
   TriangleAlert,
 } from "lucide-react"
-
-import { Badge } from "@workspace/ui/components/badge"
-import { Card, CardContent } from "@workspace/ui/components/card"
-import { cn } from "@workspace/ui/lib/utils"
 
 import type { ActionableInsight } from "@/lib/fec/analytics"
 

@@ -1,4 +1,7 @@
-import Link from "next/link"
+import { Badge } from "@workspace/ui/components/badge"
+import { Button } from "@workspace/ui/components/button"
+import { Card } from "@workspace/ui/components/card"
+import { Separator } from "@workspace/ui/components/separator"
 import {
   ArrowRight,
   Banknote,
@@ -9,11 +12,9 @@ import {
   Target,
   Wallet,
 } from "lucide-react"
+import Link from "next/link"
 
-import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
-import { Card } from "@workspace/ui/components/card"
-import { Separator } from "@workspace/ui/components/separator"
+import { FormattedCurrency } from "@/components/fec/formatted-number"
 
 const FEATURES = [
   {
@@ -169,7 +170,9 @@ export default function HomePage() {
                     <p className="text-xs text-muted-foreground">
                       Chiffre d'affaires
                     </p>
-                    <p className="font-heading text-2xl font-bold">812 K€</p>
+                    <p className="font-heading text-2xl font-bold">
+                      <FormattedCurrency value={812_000} />
+                    </p>
                     <p className="mt-0.5 text-xs text-emerald-600">
                       +18% vs N-1
                     </p>
@@ -186,9 +189,9 @@ export default function HomePage() {
                   </p>
                   <div className="flex h-20 items-end gap-1">
                     {[35, 42, 38, 51, 48, 55, 60, 49, 65, 71, 68, 78].map(
-                      (v, i) => (
+                      (v) => (
                         <div
-                          key={String(i)}
+                          key={String(v)}
                           className="flex-1 rounded-sm bg-primary/70 transition-colors hover:bg-primary"
                           style={{ height: `${String(v)}%` }}
                         />

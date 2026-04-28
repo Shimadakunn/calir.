@@ -1,7 +1,5 @@
 "use client"
 
-import { CircleDollarSign, TrendingUp, Users } from "lucide-react"
-
 import {
   Card,
   CardContent,
@@ -9,15 +7,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
+import { CircleDollarSign, TrendingUp, Users } from "lucide-react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyBarChart } from "@/components/fec/monthly-bar-chart"
 import { TopList } from "@/components/fec/top-list"
+import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro, formatPercent } from "@/lib/fec/format"
 
 export default function RevenusPage() {
   const { data } = useFecStore()
@@ -58,13 +61,17 @@ export default function RevenusPage() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Chiffre d'affaires"
-          value={formatEuro(kpi.revenue)}
+          value={<FormattedCurrency value={kpi.revenue} />}
           icon={CircleDollarSign}
-          hint={`Sur ${String(monthly.length)} mois`}
+          hint={
+            <>
+              Sur <FormattedNumber value={monthly.length} /> mois
+            </>
+          }
         />
         <KpiCard
           label="CA mensuel moyen"
-          value={formatEuro(monthlyAvg)}
+          value={<FormattedCurrency value={monthlyAvg} />}
           icon={TrendingUp}
           hint="Moyenne sur la période"
         />

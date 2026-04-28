@@ -6,11 +6,11 @@ const euroFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 })
 
-const euroCompactFormatter = new Intl.NumberFormat("fr-FR", {
+const euroExactFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
   currency: "EUR",
-  maximumFractionDigits: 1,
-  notation: "compact",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 })
 
 const percentFormatter = new Intl.NumberFormat("fr-FR", {
@@ -20,6 +20,19 @@ const percentFormatter = new Intl.NumberFormat("fr-FR", {
 
 const numberFormatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
+})
+
+const accurateNumberFormatter = new Intl.NumberFormat("fr-FR", {
+  maximumFractionDigits: 2,
+})
+
+const compactIntegerFormatter = new Intl.NumberFormat("fr-FR", {
+  maximumFractionDigits: 0,
+})
+
+const compactMillionFormatter = new Intl.NumberFormat("fr-FR", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
 })
 
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
@@ -40,8 +53,33 @@ export function formatEuro(value: number): string {
   return euroFormatter.format(value)
 }
 
+export function formatEuroExact(value: number): string {
+  return euroExactFormatter.format(value)
+}
+
+export function formatCompactNumber(
+  value: number,
+  options: { suffix?: string } = {}
+): string {
+  const finiteValue = Number.isFinite(value) ? value : 0
+  const absoluteValue = Math.abs(finiteValue)
+  const suffix = options.suffix ?? ""
+
+  if (absoluteValue >= 1_000_000) {
+    return `${compactMillionFormatter.format(finiteValue / 1_000_000)}M${suffix}`
+  }
+
+  if (absoluteValue >= 1_000) {
+    const sign = finiteValue < 0 ? -1 : 1
+    const roundedThousands = sign * Math.round(absoluteValue / 1_000)
+    return `${compactIntegerFormatter.format(roundedThousands)}K${suffix}`
+  }
+
+  return `${compactIntegerFormatter.format(Math.round(finiteValue))}${suffix}`
+}
+
 export function formatEuroCompact(value: number): string {
-  return euroCompactFormatter.format(value)
+  return formatCompactNumber(value, { suffix: "€" })
 }
 
 export function formatPercent(value: number): string {
@@ -50,6 +88,10 @@ export function formatPercent(value: number): string {
 
 export function formatNumber(value: number): string {
   return numberFormatter.format(value)
+}
+
+export function formatAccurateNumber(value: number): string {
+  return accurateNumberFormatter.format(value)
 }
 
 export function formatDate(value: Date): string {

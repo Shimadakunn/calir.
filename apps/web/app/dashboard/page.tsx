@@ -1,6 +1,13 @@
 "use client"
 
-import { Suspense } from "react"
+import { Button } from "@workspace/ui/components/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import {
   ArrowRight,
   CircleDollarSign,
@@ -10,25 +17,21 @@ import {
   Wallet,
 } from "lucide-react"
 import Link from "next/link"
-
-import { Button } from "@workspace/ui/components/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
+import { Suspense } from "react"
 
 import { CashBalanceChart } from "@/components/fec/cash-balance-chart"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import { InsightCard } from "@/components/fec/insight-card"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyTrendChart } from "@/components/fec/monthly-trend-chart"
 import { TopList } from "@/components/fec/top-list"
+import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
-import { formatEuro, formatEuroCompact, formatPercent } from "@/lib/fec/format"
 
 function DashboardOverview() {
   const { data } = useFecStore()
@@ -82,8 +85,8 @@ function DashboardOverview() {
         </h1>
         <p className="text-sm text-muted-foreground md:text-base">
           La santé de votre entreprise sur la période ·{" "}
-          {String(data.period.monthsCovered)} mois analysés ·{" "}
-          {String(data.meta.rowCount)} écritures
+          <FormattedNumber value={data.period.monthsCovered} /> mois analysés ·{" "}
+          <FormattedNumber value={data.meta.rowCount} /> écritures
         </p>
       </header>
 
@@ -92,7 +95,7 @@ function DashboardOverview() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             label="Chiffre d'affaires"
-            value={formatEuro(kpi.revenue)}
+            value={<FormattedCurrency value={kpi.revenue} />}
             icon={CircleDollarSign}
             trend={
               monthly.length >= 6
@@ -117,20 +120,20 @@ function DashboardOverview() {
           />
           <KpiCard
             label="Charges totales"
-            value={formatEuro(kpi.expenses)}
+            value={<FormattedCurrency value={kpi.expenses} />}
             icon={ReceiptText}
             hint={`${(kpi.revenue > 0 ? (kpi.expenses / kpi.revenue) * 100 : 0).toFixed(0)}% du CA`}
           />
           <KpiCard
             label="Résultat net"
-            value={formatEuro(kpi.netResult)}
+            value={<FormattedCurrency value={kpi.netResult} />}
             icon={TrendingUp}
             tone={marginTone}
             hint={`Marge ${formatPercent(kpi.margin)}`}
           />
           <KpiCard
             label="Trésorerie"
-            value={formatEuro(kpi.cashBalance)}
+            value={<FormattedCurrency value={kpi.cashBalance} />}
             icon={Wallet}
             tone={cashTone}
             hint={lastMonth ? `Solde fin ${lastMonth.monthLabel}` : undefined}
@@ -141,19 +144,28 @@ function DashboardOverview() {
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <KpiCard
             label="Marge brute"
-            value={formatEuro(kpi.grossMargin)}
+            value={<FormattedCurrency value={kpi.grossMargin} />}
             hint={`${formatPercent(kpi.grossMarginRate)} du CA`}
             icon={PiggyBank}
           />
           <KpiCard
             label="Excédent brut d'exploitation"
-            value={formatEuro(kpi.ebe)}
+            value={<FormattedCurrency value={kpi.ebe} />}
             hint="CA - achats - charges externes - personnel - impôts"
           />
           <KpiCard
             label="Créances vs dettes"
-            value={formatEuro(kpi.customerReceivables - kpi.supplierPayables)}
-            hint={`Clients ${formatEuroCompact(kpi.customerReceivables)} · Fournisseurs ${formatEuroCompact(kpi.supplierPayables)}`}
+            value={
+              <FormattedCurrency
+                value={kpi.customerReceivables - kpi.supplierPayables}
+              />
+            }
+            hint={
+              <>
+                Clients <FormattedCurrency value={kpi.customerReceivables} /> ·
+                Fournisseurs <FormattedCurrency value={kpi.supplierPayables} />
+              </>
+            }
           />
         </div>
       </section>
@@ -167,8 +179,9 @@ function DashboardOverview() {
                 À votre attention
               </h2>
               <p className="text-sm text-muted-foreground">
-                {String(topInsights.length)} action(s) prioritaire(s) parmi{" "}
-                {String(insights.length)} identifiées
+                <FormattedNumber value={topInsights.length} /> action(s)
+                prioritaire(s) parmi <FormattedNumber value={insights.length} />{" "}
+                identifiées
               </p>
             </div>
             {insights.length > 3 ? (

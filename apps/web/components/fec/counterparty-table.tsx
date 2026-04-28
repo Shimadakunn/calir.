@@ -9,8 +9,12 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
+import {
+  FormattedCurrency,
+  FormattedNumber,
+} from "@/components/fec/formatted-number"
 import type { TopCounterparty } from "@/lib/fec/analytics"
-import { formatEuro, formatShortDate } from "@/lib/fec/format"
+import { formatShortDate } from "@/lib/fec/format"
 
 export function CounterpartyTable({
   items,
@@ -58,13 +62,13 @@ export function CounterpartyTable({
                   {it.accountNum}
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground tabular-nums md:table-cell">
-                  {String(it.entryCount)}
+                  <FormattedNumber value={it.entryCount} />
                 </TableCell>
                 <TableCell className="hidden text-xs text-muted-foreground lg:table-cell">
                   {formatShortDate(it.lastDate)}
                 </TableCell>
                 <TableCell className="text-right font-mono font-medium tabular-nums">
-                  {formatEuro(it.amount)}
+                  <FormattedCurrency value={it.amount} />
                 </TableCell>
                 <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                   {share.toFixed(1)}%
