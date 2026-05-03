@@ -10,10 +10,26 @@ import {
 } from "react"
 import type { ReactNode } from "react"
 
-import { buildDashboardData, type DashboardData } from "./analytics"
+import {
+  assignExpenseFills,
+  assignRevenueFills,
+  buildDashboardData,
+  type DashboardData,
+} from "./analytics"
 import { parseFecFile } from "./parser"
 
-const STORAGE_KEY = "clair.fec.dashboard.v1"
+// v5 (2026-05) : ajout de notDuePartyCount dans AgedBalance pour symetriser
+// avec overduePartyCount (nb de tiers ayant des factures non echues).
+// v4 (2026-05) : ajout de la balance agee (agedReceivables, agedPayables) avec
+// matching FIFO par tiers et bucketing 0-30 / 31-60 / +60 jours.
+// v3 (2026-05) : ajout des champs seuil de rentabilite dans KpiSummary
+// (variableCosts, fixedCosts, contributionMargin, breakevenPoint, ...).
+// v2 (2026-05) : refonte de la categorisation des comptes
+// (Couts fixes/RH/Variables/... au lieu des classes PCG 60-69).
+// Les utilisateurs avec un snapshot anterieur devront re-importer leur FEC.
+const STORAGE_KEY = "clair.fec.dashboard.v5"
+// Slot secondaire pour la comparaison entre deux FEC (meme schema, meme version).
+const COMPARISON_STORAGE_KEY = "clair.fec.dashboard.comparison.v5"
 
 interface SerializedSnapshot {
   meta: DashboardData["meta"]
@@ -53,7 +69,22 @@ interface SerializedSnapshot {
     }
   >
   insights: DashboardData["insights"]
+  agedReceivables: Omit<DashboardData["agedReceivables"], "asOf"> & {
+    asOf: string
+  }
+  agedPayables: Omit<DashboardData["agedPayables"], "asOf"> & {
+    asOf: string
+  }
   warnings: string[]
+}
+
+function stripFill(items: DashboardData["expenseCategories"]) {
+  return items.map(({ key, label, amount, share }) => ({
+    key,
+    label,
+    amount,
+    share,
+  }))
 }
 
 function serialize(data: DashboardData): SerializedSnapshot {
@@ -67,8 +98,10 @@ function serialize(data: DashboardData): SerializedSnapshot {
     },
     kpi: data.kpi,
     monthly: data.monthly,
-    expenseCategories: data.expenseCategories,
-    revenueCategories: data.revenueCategories,
+    // `fill` est de la presentation, on le retire avant persistence pour qu'un
+    // changement de palette dans globals.css prenne effet sans re-upload.
+    expenseCategories: stripFill(data.expenseCategories),
+    revenueCategories: stripFill(data.revenueCategories),
     topCustomers: data.topCustomers.map((c) => ({
       ...c,
       lastDate: c.lastDate.toISOString(),
@@ -90,6 +123,14 @@ function serialize(data: DashboardData): SerializedSnapshot {
       lastDate: c.lastDate.toISOString(),
     })),
     insights: data.insights,
+    agedReceivables: {
+      ...data.agedReceivables,
+      asOf: data.agedReceivables.asOf.toISOString(),
+    },
+    agedPayables: {
+      ...data.agedPayables,
+      asOf: data.agedPayables.asOf.toISOString(),
+    },
     warnings: data.warnings,
   }
 }
@@ -113,8 +154,11 @@ function deserialize(snap: SerializedSnapshot): DashboardData {
     },
     kpi: snap.kpi,
     monthly: snap.monthly,
-    expenseCategories: snap.expenseCategories,
-    revenueCategories: snap.revenueCategories,
+    // Les fills ne sont pas persistes : on les recalcule a partir de la palette
+    // courante. Cela garantit la coherence visuelle apres chaque changement de
+    // theme sans necessiter de re-upload du FEC.
+    expenseCategories: assignExpenseFills(snap.expenseCategories),
+    revenueCategories: assignRevenueFills(snap.revenueCategories),
     topCustomers: snap.topCustomers.map((c) => ({
       ...c,
       lastDate: new Date(c.lastDate),
@@ -136,8 +180,35 @@ function deserialize(snap: SerializedSnapshot): DashboardData {
       lastDate: new Date(c.lastDate),
     })),
     insights: snap.insights,
+    agedReceivables: {
+      ...snap.agedReceivables,
+      asOf: new Date(snap.agedReceivables.asOf),
+    },
+    agedPayables: {
+      ...snap.agedPayables,
+      asOf: new Date(snap.agedPayables.asOf),
+    },
     warnings: snap.warnings,
   }
+}
+
+function loadSnapshot(key: string): DashboardData | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return null
+    return deserialize(JSON.parse(raw) as SerializedSnapshot)
+  } catch {
+    window.localStorage.removeItem(key)
+    return null
+  }
+}
+
+async function buildDemoFile(): Promise<File> {
+  const { generateDemoFecText } = await import("./demo")
+  const text = generateDemoFecText()
+  const blob = new Blob([text], { type: "text/plain" })
+  return new File([blob], "demo-clair.txt", { type: "text/plain" })
 }
 
 type ImportState =
@@ -154,78 +225,116 @@ interface FecStoreValue {
   importDemo: () => Promise<void>
   importDashboardData: (data: DashboardData) => void
   reset: () => void
+  // Slot secondaire utilise pour comparer un second FEC au FEC principal.
+  comparisonData: DashboardData | null
+  comparisonImportState: ImportState
+  importComparisonFile: (file: File) => Promise<void>
+  importComparisonDemo: () => Promise<void>
+  resetComparison: () => void
 }
 
 const FecStoreContext = createContext<FecStoreValue | null>(null)
 
 export function FecStoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DashboardData | null>(null)
+  const [comparisonData, setComparisonData] = useState<DashboardData | null>(
+    null
+  )
   const [hydrated, setHydrated] = useState(false)
   const [importState, setImportState] = useState<ImportState>({
     status: "idle",
   })
+  const [comparisonImportState, setComparisonImportState] =
+    useState<ImportState>({ status: "idle" })
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as SerializedSnapshot
-        setData(deserialize(parsed))
-        setImportState({ status: "ready" })
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY)
-    } finally {
-      setHydrated(true)
+    const primary = loadSnapshot(STORAGE_KEY)
+    if (primary) {
+      setData(primary)
+      setImportState({ status: "ready" })
     }
+    const comparison = loadSnapshot(COMPARISON_STORAGE_KEY)
+    if (comparison) {
+      setComparisonData(comparison)
+      setComparisonImportState({ status: "ready" })
+    }
+    setHydrated(true)
   }, [])
 
-  const importFile = useCallback(async (file: File) => {
-    setImportState({ status: "parsing", fileName: file.name })
-    try {
-      const parsed = await parseFecFile(file)
-      const dashboard = buildDashboardData(parsed)
-      setData(dashboard)
-      window.localStorage.setItem(
+  // Generique : parse + persiste + met a jour le slot cible. Permet de mutualiser
+  // la logique entre le FEC principal et le FEC de comparaison.
+  const runImport = useCallback(
+    async (
+      file: File,
+      storageKey: string,
+      setSlotData: (d: DashboardData) => void,
+      setSlotState: (s: ImportState) => void,
+      fallbackError: string
+    ) => {
+      setSlotState({ status: "parsing", fileName: file.name })
+      try {
+        const parsed = await parseFecFile(file)
+        const dashboard = buildDashboardData(parsed)
+        setSlotData(dashboard)
+        window.localStorage.setItem(
+          storageKey,
+          JSON.stringify(serialize(dashboard))
+        )
+        setSlotState({ status: "ready" })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : fallbackError
+        setSlotState({ status: "error", message })
+        throw error
+      }
+    },
+    []
+  )
+
+  const importFile = useCallback(
+    (file: File) =>
+      runImport(
+        file,
         STORAGE_KEY,
-        JSON.stringify(serialize(dashboard))
-      )
-      setImportState({ status: "ready" })
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Une erreur est survenue lors de l'analyse du fichier."
-      setImportState({ status: "error", message })
-      throw error
-    }
-  }, [])
+        setData,
+        setImportState,
+        "Une erreur est survenue lors de l'analyse du fichier."
+      ),
+    [runImport]
+  )
 
   const importDemo = useCallback(async () => {
-    setImportState({ status: "parsing", fileName: "demo-fec.txt" })
-    try {
-      const { generateDemoFecText } = await import("./demo")
-      const text = generateDemoFecText()
-      const blob = new Blob([text], { type: "text/plain" })
-      const file = new File([blob], "demo-clair.txt", { type: "text/plain" })
-      const parsed = await parseFecFile(file)
-      const dashboard = buildDashboardData(parsed)
-      setData(dashboard)
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(serialize(dashboard))
-      )
-      setImportState({ status: "ready" })
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erreur lors du chargement du jeu de demonstration."
-      setImportState({ status: "error", message })
-      throw error
-    }
-  }, [])
+    const file = await buildDemoFile()
+    await runImport(
+      file,
+      STORAGE_KEY,
+      setData,
+      setImportState,
+      "Erreur lors du chargement du jeu de demonstration."
+    )
+  }, [runImport])
+
+  const importComparisonFile = useCallback(
+    (file: File) =>
+      runImport(
+        file,
+        COMPARISON_STORAGE_KEY,
+        setComparisonData,
+        setComparisonImportState,
+        "Une erreur est survenue lors de l'analyse du fichier."
+      ),
+    [runImport]
+  )
+
+  const importComparisonDemo = useCallback(async () => {
+    const file = await buildDemoFile()
+    await runImport(
+      file,
+      COMPARISON_STORAGE_KEY,
+      setComparisonData,
+      setComparisonImportState,
+      "Erreur lors du chargement du jeu de demonstration."
+    )
+  }, [runImport])
 
   const importDashboardData = useCallback((next: DashboardData) => {
     setData(next)
@@ -233,11 +342,21 @@ export function FecStoreProvider({ children }: { children: ReactNode }) {
     setImportState({ status: "ready" })
   }, [])
 
+  const resetComparison = useCallback(() => {
+    setComparisonData(null)
+    setComparisonImportState({ status: "idle" })
+    if (typeof window !== "undefined")
+      window.localStorage.removeItem(COMPARISON_STORAGE_KEY)
+  }, [])
+
   const reset = useCallback(() => {
     setData(null)
     setImportState({ status: "idle" })
+    setComparisonData(null)
+    setComparisonImportState({ status: "idle" })
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY)
+      window.localStorage.removeItem(COMPARISON_STORAGE_KEY)
     }
   }, [])
 
@@ -250,6 +369,11 @@ export function FecStoreProvider({ children }: { children: ReactNode }) {
       importDemo,
       importDashboardData,
       reset,
+      comparisonData,
+      comparisonImportState,
+      importComparisonFile,
+      importComparisonDemo,
+      resetComparison,
     }),
     [
       data,
@@ -259,6 +383,11 @@ export function FecStoreProvider({ children }: { children: ReactNode }) {
       importDemo,
       importDashboardData,
       reset,
+      comparisonData,
+      comparisonImportState,
+      importComparisonFile,
+      importComparisonDemo,
+      resetComparison,
     ]
   )
 

@@ -18,6 +18,11 @@ import {
   REVENUE_CATEGORIES,
   type RevenueCategory,
 } from "./accounts"
+import {
+  type AgedBalance,
+  computeAgedPayables,
+  computeAgedReceivables,
+} from "./aged-balance"
 import { formatEuro } from "./format"
 import type { FecEntry, FecParseResult } from "./types"
 
@@ -50,6 +55,18 @@ export interface KpiSummary {
   // Marge brute = CA - achats consommes
   grossMargin: number
   grossMarginRate: number
+  // Seuil de rentabilite (point mort)
+  // Variables = categorie "variables" du PCG (60, 611, 624)
+  // Fixes = total charges - variables
+  // MCV = CA - variables ; taux MCV = MCV/CA
+  // Seuil = fixes / taux MCV ; marge securite = CA - seuil
+  variableCosts: number
+  fixedCosts: number
+  contributionMargin: number
+  contributionMarginRate: number // en %
+  breakevenPoint: number // CA minimum pour resultat = 0
+  safetyMargin: number // CA - seuil (en €)
+  safetyMarginRate: number // en % du CA
 }
 
 export interface MonthlyPoint {
@@ -77,6 +94,12 @@ export interface TopCounterparty {
   entryCount: number
   lastDate: Date
 }
+
+export type {
+  AgedBalance,
+  AgedBalanceBucket,
+  AgedBalanceCounterparty,
+} from "./aged-balance"
 
 export interface ActionableInsight {
   id: string
@@ -107,16 +130,48 @@ export interface DashboardData {
   topRevenueAccounts: TopCounterparty[]
   insights: ActionableInsight[]
   cashByAccount: TopCounterparty[]
+  agedReceivables: AgedBalance
+  agedPayables: AgedBalance
   warnings: string[]
 }
 
-const CHART_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
+// Rampes ordonnees du plus fonce au plus clair : la categorie la plus grosse
+// (idx 0 apres tri desc par montant) recoit la couleur la plus saturee.
+const REVENUE_RAMP = [
+  "var(--revenue-5)",
+  "var(--revenue-4)",
+  "var(--revenue-3)",
+  "var(--revenue-2)",
+  "var(--revenue-1)",
 ]
+
+const EXPENSE_RAMP = [
+  "var(--expense-5)",
+  "var(--expense-4)",
+  "var(--expense-3)",
+  "var(--expense-2)",
+  "var(--expense-1)",
+]
+
+// Helpers exposes pour reattribuer les fills apres deserialisation.
+// Le `fill` est de la presentation, pas de la donnee : on ne le persiste pas.
+export function assignRevenueFills(
+  items: CategoryBreakdown[]
+): CategoryBreakdown[] {
+  return items.map((it, idx) => ({
+    ...it,
+    fill: REVENUE_RAMP[idx % REVENUE_RAMP.length]!,
+  }))
+}
+
+export function assignExpenseFills(
+  items: CategoryBreakdown[]
+): CategoryBreakdown[] {
+  return items.map((it, idx) => ({
+    ...it,
+    fill: EXPENSE_RAMP[idx % EXPENSE_RAMP.length]!,
+  }))
+}
 
 function monthKey(date: Date): string {
   return `${String(date.getUTCFullYear())}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
@@ -220,6 +275,22 @@ function computeKpi(entries: FecEntry[]): KpiSummary {
   const grossMarginRate = revenue > 0 ? (grossMargin / revenue) * 100 : 0
   const ebe = revenue - purchases - externalCharges - payroll - taxes
 
+  // Seuil de rentabilite : on s'appuie sur la categorisation "variables" du PCG
+  // (60 achats, 611 sous-traitance, 624 transports). Le reste des charges 6x est
+  // considere comme fixe — approximation classique en absence de compta analytique.
+  const variableCosts = sumByPredicate(entries, (e) => {
+    const cat = getExpenseCategory(e.compteNum)
+    return cat?.key === "variables"
+  })
+  const fixedCosts = expenses - variableCosts
+  const contributionMargin = revenue - variableCosts
+  const contributionMarginRate =
+    revenue > 0 ? (contributionMargin / revenue) * 100 : 0
+  const breakevenPoint =
+    contributionMarginRate > 0 ? fixedCosts / (contributionMarginRate / 100) : 0
+  const safetyMargin = breakevenPoint > 0 ? revenue - breakevenPoint : 0
+  const safetyMarginRate = revenue > 0 ? (safetyMargin / revenue) * 100 : 0
+
   return {
     revenue,
     expenses,
@@ -237,6 +308,13 @@ function computeKpi(entries: FecEntry[]): KpiSummary {
     grossMargin,
     grossMarginRate,
     ebe,
+    variableCosts,
+    fixedCosts,
+    contributionMargin,
+    contributionMarginRate,
+    breakevenPoint,
+    safetyMargin,
+    safetyMarginRate,
   }
 }
 
@@ -320,7 +398,7 @@ function computeExpenseBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
     const acc = totals.get(cat.label)
     if (!acc || acc.amount <= 0) continue
     items.push({
-      key: cat.prefix,
+      key: cat.key,
       label: cat.label,
       amount: acc.amount,
       share: (acc.amount / total) * 100,
@@ -328,13 +406,7 @@ function computeExpenseBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
   }
 
   items.sort((a, b) => b.amount - a.amount)
-  return items.map((it, idx) => ({
-    key: it.key,
-    label: it.label,
-    amount: it.amount,
-    share: it.share,
-    fill: CHART_COLORS[idx % CHART_COLORS.length]!,
-  }))
+  return assignExpenseFills(items)
 }
 
 function computeRevenueBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
@@ -359,7 +431,7 @@ function computeRevenueBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
     const acc = totals.get(cat.label)
     if (!acc || acc.amount <= 0) continue
     items.push({
-      key: cat.prefix,
+      key: cat.key,
       label: cat.label,
       amount: acc.amount,
       share: (acc.amount / total) * 100,
@@ -367,13 +439,7 @@ function computeRevenueBreakdown(entries: FecEntry[]): CategoryBreakdown[] {
   }
 
   items.sort((a, b) => b.amount - a.amount)
-  return items.map((it, idx) => ({
-    key: it.key,
-    label: it.label,
-    amount: it.amount,
-    share: it.share,
-    fill: CHART_COLORS[idx % CHART_COLORS.length]!,
-  }))
+  return assignRevenueFills(items)
 }
 
 function computeTopCounterparties(
@@ -485,11 +551,15 @@ function computeInsights(
         title: `${top.label} represente ${top.share.toFixed(0)}% de vos charges`,
         description: `${formatEuro(top.amount)} sur la periode. Une reduction de 10% degagerait ${formatEuro(top.amount * 0.1)} de marge.`,
         action:
-          top.key === "61" || top.key === "62"
-            ? "Renegociez vos contrats fournisseurs (telecom, energie, sous-traitance, locations)."
-            : top.key === "64"
+          top.key === "fixes"
+            ? "Renegociez vos contrats fixes : loyer, telecoms, assurances, abonnements."
+            : top.key === "rh"
               ? "Optimisez l'organisation du travail avant d'envisager des reductions d'effectifs."
-              : "Auditez ce poste avec votre comptable pour identifier les economies possibles.",
+              : top.key === "variables"
+                ? "Renegociez vos achats : un volume groupe permet souvent 5-10% d'economies."
+                : top.key === "acquisitions"
+                  ? "Mesurez le ROI de chaque depense d'acquisition avant de la reconduire."
+                  : "Auditez ce poste avec votre comptable pour identifier les economies possibles.",
         category: "charges",
       })
     }
@@ -652,6 +722,9 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
 
   const cashByAccount = computeCashByAccount(entries)
 
+  const agedReceivables = computeAgedReceivables(entries, period.endDate)
+  const agedPayables = computeAgedPayables(entries, period.endDate)
+
   const insights = computeInsights(
     kpi,
     expenseCategories,
@@ -673,6 +746,8 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
     topRevenueAccounts,
     insights,
     cashByAccount,
+    agedReceivables,
+    agedPayables,
     warnings,
   }
 }

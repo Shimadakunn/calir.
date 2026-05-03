@@ -39,7 +39,9 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback } from "react"
 
+import { ComparisonFecCard } from "@/components/fec/comparison-fec-card"
 import { FormattedNumber } from "@/components/fec/formatted-number"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { formatShortDate } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
 
@@ -157,6 +159,7 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <ThemeToggle />
         {data ? (
           <div className="mx-1 mb-1 rounded-lg border border-border bg-muted/30 p-3">
             <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -208,6 +211,7 @@ export function DashboardSidebar() {
             </Dialog>
           </div>
         ) : null}
+        {data ? <ComparisonFecCard /> : null}
       </SidebarFooter>
     </Sidebar>
   )

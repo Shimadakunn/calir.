@@ -19,6 +19,8 @@ import {
 import Link from "next/link"
 import { Suspense } from "react"
 
+import { AgedBalanceCard } from "@/components/fec/aged-balance-card"
+import { BreakevenSection } from "@/components/fec/breakeven-section"
 import { CashBalanceChart } from "@/components/fec/cash-balance-chart"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
@@ -26,9 +28,9 @@ import {
   FormattedCurrency,
   FormattedNumber,
 } from "@/components/fec/formatted-number"
-import { InsightCard } from "@/components/fec/insight-card"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyTrendChart } from "@/components/fec/monthly-trend-chart"
+import { ResultBreakdown } from "@/components/fec/result-breakdown"
 import { TopList } from "@/components/fec/top-list"
 import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
@@ -42,9 +44,11 @@ function DashboardOverview() {
     kpi,
     monthly,
     expenseCategories,
+    revenueCategories,
     topCustomers,
     topSuppliers,
-    insights,
+    agedReceivables,
+    agedPayables,
   } = data
 
   // Calcul du delta CA derniers 3 mois vs 3 precedents
@@ -62,20 +66,6 @@ function DashboardOverview() {
         : "default"
   const marginTone =
     kpi.margin < 0 ? "danger" : kpi.margin < 5 ? "warning" : "success"
-
-  // Insights : on prend les 3 plus prioritaires (critical > warning > info > positive)
-  const severityOrder: Record<string, number> = {
-    critical: 0,
-    warning: 1,
-    info: 2,
-    positive: 3,
-  }
-  const topInsights = [...insights]
-    .sort(
-      (a, b) =>
-        (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4)
-    )
-    .slice(0, 3)
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 md:px-6">
@@ -170,38 +160,27 @@ function DashboardOverview() {
         </div>
       </section>
 
-      {/* === Insights actionnables === */}
-      {topInsights.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-heading text-xl font-semibold">
-                À votre attention
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                <FormattedNumber value={topInsights.length} /> action(s)
-                prioritaire(s) parmi <FormattedNumber value={insights.length} />{" "}
-                identifiées
-              </p>
-            </div>
-            {insights.length > 3 ? (
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href="/dashboard/insights" />}
-              >
-                Toutes les actions
-                <ArrowRight />
-              </Button>
-            ) : null}
-          </div>
-          <div className="grid gap-3 lg:grid-cols-2">
-            {topInsights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* === Composition du résultat === */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Composition du résultat</CardTitle>
+            <CardDescription>
+              Comparez d'où vient l'argent et où il part. Le bloc vert au sommet
+              des charges représente ce qu'il reste — votre résultat net.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResultBreakdown
+              revenueCategories={revenueCategories}
+              expenseCategories={expenseCategories}
+              revenue={kpi.revenue}
+              expenses={kpi.expenses}
+              netResult={kpi.netResult}
+            />
+          </CardContent>
+        </Card>
+      </section>
 
       {/* === Tendance mensuelle === */}
       <section className="grid gap-4 lg:grid-cols-3">
@@ -238,6 +217,17 @@ function DashboardOverview() {
             <CashBalanceChart monthly={monthly} className="h-[280px] w-full" />
           </CardContent>
         </Card>
+      </section>
+
+      {/* === Seuil de rentabilité === */}
+      <section>
+        <BreakevenSection kpi={kpi} />
+      </section>
+
+      {/* === Balance âgée clients & fournisseurs === */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <AgedBalanceCard type="clients" data={agedReceivables} />
+        <AgedBalanceCard type="fournisseurs" data={agedPayables} />
       </section>
 
       {/* === Charges + clients === */}
@@ -346,28 +336,12 @@ function DashboardOverview() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
+          <CardContent>
             <TopList
               items={topSuppliers}
               showCount={5}
               emptyLabel="Aucun fournisseur identifié"
             />
-            <div className="space-y-3 text-sm">
-              <p className="text-muted-foreground">
-                Si vos 3 plus gros fournisseurs représentent une part
-                significative de vos achats, vous avez du poids pour négocier
-                des conditions plus avantageuses.
-              </p>
-              <ul className="space-y-1.5 text-xs text-muted-foreground">
-                <li>
-                  • Demandez 3 devis concurrents pour les 2 plus gros postes
-                </li>
-                <li>• Négociez 5-10% de remise sur volume annuel</li>
-                <li>
-                  • Allongez les délais de paiement pour soulager la trésorerie
-                </li>
-              </ul>
-            </div>
           </CardContent>
         </Card>
       </section>

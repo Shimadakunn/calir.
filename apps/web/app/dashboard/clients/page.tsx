@@ -9,6 +9,7 @@ import {
 } from "@workspace/ui/components/card"
 import { CalendarClock, ChartLine, CircleAlert, Users } from "lucide-react"
 
+import { AgedBalanceCard } from "@/components/fec/aged-balance-card"
 import { CounterpartyTable } from "@/components/fec/counterparty-table"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
@@ -23,7 +24,7 @@ export default function ClientsPage() {
   const { data } = useFecStore()
   if (!data) return <DashboardEmptyState />
 
-  const { kpi, topCustomers } = data
+  const { kpi, topCustomers, agedReceivables } = data
 
   const totalCustomerVolume = topCustomers.reduce((s, c) => s + c.amount, 0)
   const top1Share =
@@ -94,6 +95,8 @@ export default function ClientsPage() {
           }
         />
       </section>
+
+      <AgedBalanceCard type="clients" data={agedReceivables} />
 
       {top3Share > 60 ? (
         <Card className="border-amber-500/40 bg-amber-500/[0.05]">

@@ -2,15 +2,18 @@
 
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
 import { Briefcase, Building2, Receipt, ReceiptText } from "lucide-react"
+import { useState } from "react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
+import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import { FormattedCurrency } from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
@@ -20,7 +23,8 @@ import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
 
 export default function ChargesPage() {
-  const { data } = useFecStore()
+  const { data, comparisonData } = useFecStore()
+  const [showComparison, setShowComparison] = useState(true)
   if (!data) return <DashboardEmptyState />
 
   const { kpi, monthly, expenseCategories, topExpenseAccounts } = data
@@ -77,11 +81,24 @@ export default function ChargesPage() {
           <CardDescription>
             Identifiez les pics et les postes saisonniers à anticiper
           </CardDescription>
+          {comparisonData ? (
+            <CardAction>
+              <ComparisonToggle
+                active={showComparison}
+                onToggle={() => setShowComparison((v) => !v)}
+              />
+            </CardAction>
+          ) : null}
         </CardHeader>
         <CardContent>
           <MonthlyBarChart
             monthly={monthly}
             metric="expenses"
+            comparison={
+              showComparison && comparisonData
+                ? comparisonData.monthly
+                : undefined
+            }
             className="h-[320px] w-full"
           />
         </CardContent>

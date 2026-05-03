@@ -14,8 +14,8 @@ import type { MonthlyPoint } from "@/lib/fec/analytics"
 import { formatEuroCompact, formatEuroExact } from "@/lib/fec/format"
 
 const config = {
-  revenue: { label: "Revenus", color: "var(--chart-2)" },
-  expenses: { label: "Charges", color: "var(--chart-4)" },
+  revenue: { label: "Revenus", color: "var(--revenue)" },
+  expenses: { label: "Charges", color: "var(--expense)" },
 } satisfies ChartConfig
 
 interface MonthlyTrendChartProps {

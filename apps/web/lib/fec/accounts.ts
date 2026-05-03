@@ -1,63 +1,164 @@
 // Mapping des classes du Plan Comptable General (PCG) francais.
 // Reference : https://www.plancomptable.com/
+//
+// Les categories agreges sont orientees "decision SMB" plutot que strictement
+// PCG : un dirigeant pense "couts fixes vs variables", pas "compte 613 vs 624".
+// Les regles longues prefixes l'emportent (ex : 6226 honoraires expert
+// comptable bat 622 intermediaires generaux).
 
 export type AccountClass = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface ExpenseCategory {
-  prefix: string
+  key: string
   label: string
-  // Categories simplifiees pour un dirigeant non-comptable
-  group:
-    | "achats"
-    | "charges-externes"
-    | "impots"
-    | "personnel"
-    | "amortissements"
-    | "financier"
-    | "exceptionnel"
-    | "autres"
+  prefixes: readonly string[]
 }
 
-export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  { prefix: "60", label: "Achats", group: "achats" },
-  { prefix: "61", label: "Services exterieurs", group: "charges-externes" },
+export const EXPENSE_CATEGORIES: readonly ExpenseCategory[] = [
   {
-    prefix: "62",
-    label: "Autres services exterieurs",
-    group: "charges-externes",
+    key: "fixes",
+    label: "Coûts fixes",
+    prefixes: [
+      "612", // credit-bail
+      "613", // locations
+      "614", // charges locatives
+      "615", // entretien et reparations
+      "616", // assurances
+      "618", // documentation, divers
+      "626", // postal, telecom
+      "628", // divers
+      "65", // autres charges de gestion courante
+      "67", // charges exceptionnelles (672 ressort plus bas via prefixe long)
+    ],
   },
-  { prefix: "63", label: "Impots et taxes", group: "impots" },
-  { prefix: "64", label: "Charges de personnel", group: "personnel" },
-  { prefix: "65", label: "Autres charges de gestion", group: "autres" },
-  { prefix: "66", label: "Charges financieres", group: "financier" },
-  { prefix: "67", label: "Charges exceptionnelles", group: "exceptionnel" },
-  { prefix: "68", label: "Dotations amortissements", group: "amortissements" },
-  { prefix: "69", label: "Impots sur les benefices", group: "impots" },
+  {
+    key: "rh",
+    label: "Ressources humaines",
+    prefixes: [
+      "621", // personnel exterieur a l'entreprise
+      "64", // charges de personnel
+    ],
+  },
+  {
+    key: "variables",
+    label: "Coûts variables",
+    prefixes: [
+      "60", // achats (matieres, marchandises, fournitures)
+      "611", // sous-traitance generale
+      "624", // transports
+    ],
+  },
+  {
+    key: "exercices",
+    label: "Charges sur exercices antérieurs",
+    prefixes: ["672"],
+  },
+  {
+    key: "acquisitions",
+    label: "Acquisitions croissance",
+    prefixes: [
+      "617", // etudes et recherches
+      "622", // remunerations d'intermediaires (6226 part en "comptables")
+      "623", // publicite, publications, relations publiques
+      "625", // deplacements, missions, receptions
+    ],
+  },
+  {
+    key: "comptables",
+    label: "Charges comptables",
+    prefixes: [
+      "6226", // honoraires expert comptable (specifique, bat 622)
+      "68", // dotations aux amortissements et provisions
+    ],
+  },
+  {
+    key: "financieres",
+    label: "Charges financières",
+    prefixes: [
+      "627", // services bancaires et assimiles
+      "66", // charges financieres
+    ],
+  },
+  {
+    key: "gouvernementales",
+    label: "Charges gouvernementales",
+    prefixes: [
+      "63", // impots, taxes et versements assimiles
+      "69", // impots sur les benefices
+    ],
+  },
 ]
 
 export interface RevenueCategory {
-  prefix: string
+  key: string
   label: string
-  group:
-    | "ventes"
-    | "production"
-    | "subventions"
-    | "financier"
-    | "exceptionnel"
-    | "autres"
+  prefixes: readonly string[]
 }
 
-export const REVENUE_CATEGORIES: RevenueCategory[] = [
-  { prefix: "70", label: "Ventes", group: "ventes" },
-  { prefix: "71", label: "Production stockee", group: "production" },
-  { prefix: "72", label: "Production immobilisee", group: "production" },
-  { prefix: "74", label: "Subventions d'exploitation", group: "subventions" },
-  { prefix: "75", label: "Autres produits de gestion", group: "autres" },
-  { prefix: "76", label: "Produits financiers", group: "financier" },
-  { prefix: "77", label: "Produits exceptionnels", group: "exceptionnel" },
-  { prefix: "78", label: "Reprises sur amortissements", group: "autres" },
-  { prefix: "79", label: "Transferts de charges", group: "autres" },
+export const REVENUE_CATEGORIES: readonly RevenueCategory[] = [
+  {
+    key: "marchandises",
+    label: "Marchandises",
+    prefixes: [
+      "707", // ventes de marchandises
+      "701", // ventes de produits finis
+      "702", // ventes de produits intermediaires
+      "703", // ventes de produits residuels
+    ],
+  },
+  {
+    key: "services",
+    label: "Services",
+    prefixes: [
+      "706", // prestations de services
+      "704", // travaux
+      "705", // etudes
+      "708", // produits des activites annexes (7085 part en "transports")
+    ],
+  },
+  {
+    key: "transports",
+    label: "Transports",
+    prefixes: ["7085"], // ports et frais accessoires factures
+  },
+  {
+    key: "financiers",
+    label: "Produits financiers",
+    prefixes: ["76"],
+  },
+  {
+    key: "exercices",
+    label: "Produits sur exercices antérieurs",
+    prefixes: ["772"],
+  },
+  {
+    key: "divers",
+    label: "Produits divers",
+    prefixes: [
+      "71", // production stockee
+      "72", // production immobilisee
+      "74", // subventions d'exploitation
+      "75", // autres produits de gestion courante
+      "77", // produits exceptionnels (772 ressort plus haut)
+      "78", // reprises sur amortissements
+      "79", // transferts de charges
+    ],
+  },
 ]
+
+// Lookup tables pre-triees : prefixe le plus long en premier (specificite gagne).
+const EXPENSE_LOOKUP = buildLookup(EXPENSE_CATEGORIES)
+const REVENUE_LOOKUP = buildLookup(REVENUE_CATEGORIES)
+
+function buildLookup<T extends { prefixes: readonly string[] }>(
+  categories: readonly T[]
+): ReadonlyArray<{ prefix: string; category: T }> {
+  const list: Array<{ prefix: string; category: T }> = []
+  for (const cat of categories)
+    for (const prefix of cat.prefixes) list.push({ prefix, category: cat })
+  list.sort((a, b) => b.prefix.length - a.prefix.length)
+  return list
+}
 
 export function getAccountClass(compteNum: string): AccountClass | null {
   const first = compteNum.trim()[0]
@@ -119,10 +220,14 @@ export function isAmortizationAccount(compteNum: string): boolean {
 
 export function getExpenseCategory(compteNum: string): ExpenseCategory | null {
   const t = compteNum.trim()
-  return EXPENSE_CATEGORIES.find((c) => t.startsWith(c.prefix)) ?? null
+  for (const rule of EXPENSE_LOOKUP)
+    if (t.startsWith(rule.prefix)) return rule.category
+  return null
 }
 
 export function getRevenueCategory(compteNum: string): RevenueCategory | null {
   const t = compteNum.trim()
-  return REVENUE_CATEGORIES.find((c) => t.startsWith(c.prefix)) ?? null
+  for (const rule of REVENUE_LOOKUP)
+    if (t.startsWith(rule.prefix)) return rule.category
+  return null
 }

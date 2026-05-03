@@ -16,6 +16,8 @@
   },
   "sortPackageJson": true,
   "ignorePatterns": [
+    "**/.agents/**",
+    "**/.claude/**",
     "**/dist/**",
     "**/node_modules/**",
     "**/.next/**",

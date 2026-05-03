@@ -9,6 +9,7 @@ import {
 } from "@workspace/ui/components/card"
 import { CalendarClock, ChartLine, HandCoins, Truck } from "lucide-react"
 
+import { AgedBalanceCard } from "@/components/fec/aged-balance-card"
 import { CounterpartyTable } from "@/components/fec/counterparty-table"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
@@ -23,7 +24,7 @@ export default function FournisseursPage() {
   const { data } = useFecStore()
   if (!data) return <DashboardEmptyState />
 
-  const { kpi, topSuppliers } = data
+  const { kpi, topSuppliers, agedPayables } = data
 
   const totalSupplierVolume = topSuppliers.reduce((s, c) => s + c.amount, 0)
   const top1Share =
@@ -87,6 +88,8 @@ export default function FournisseursPage() {
           }
         />
       </section>
+
+      <AgedBalanceCard type="fournisseurs" data={agedPayables} />
 
       <Card className="bg-gradient-to-br from-primary/[0.04] to-transparent">
         <CardHeader>

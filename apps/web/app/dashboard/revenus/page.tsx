@@ -2,15 +2,18 @@
 
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
 import { CircleDollarSign, TrendingUp, Users } from "lucide-react"
+import { useState } from "react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
+import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
   FormattedCurrency,
@@ -23,7 +26,8 @@ import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
 
 export default function RevenusPage() {
-  const { data } = useFecStore()
+  const { data, comparisonData } = useFecStore()
+  const [showComparison, setShowComparison] = useState(true)
   if (!data) return <DashboardEmptyState />
 
   const { kpi, monthly, revenueCategories, topCustomers, topRevenueAccounts } =
@@ -99,11 +103,24 @@ export default function RevenusPage() {
           <CardDescription>
             Détectez tendances, saisonnalités et anomalies
           </CardDescription>
+          {comparisonData ? (
+            <CardAction>
+              <ComparisonToggle
+                active={showComparison}
+                onToggle={() => setShowComparison((v) => !v)}
+              />
+            </CardAction>
+          ) : null}
         </CardHeader>
         <CardContent>
           <MonthlyBarChart
             monthly={monthly}
             metric="revenue"
+            comparison={
+              showComparison && comparisonData
+                ? comparisonData.monthly
+                : undefined
+            }
             className="h-[320px] w-full"
           />
         </CardContent>

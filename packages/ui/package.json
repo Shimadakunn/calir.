@@ -12,7 +12,7 @@
   },
   "scripts": {
     "lint": "pnpm exec oxlint -c ../../.oxlintrc.json --react-plugin --jsx-a11y-plugin .",
-    "format": "pnpm exec oxfmt -c ../../.oxfmtrc.json .",
+    "format": "pnpm exec oxfmt -c ../../.oxfmtrc.json --check .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

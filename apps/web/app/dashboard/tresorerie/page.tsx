@@ -2,6 +2,7 @@
 
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -15,11 +16,10 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react"
+import { useState } from "react"
 
-import {
-  CashBalanceChart,
-  CashFlowChart,
-} from "@/components/fec/cash-balance-chart"
+import { CashCombinedChart } from "@/components/fec/cash-balance-chart"
+import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
   FormattedCurrency,
@@ -30,7 +30,8 @@ import { TopList } from "@/components/fec/top-list"
 import { useFecStore } from "@/lib/fec/store"
 
 export default function TresoreriePage() {
-  const { data } = useFecStore()
+  const { data, comparisonData } = useFecStore()
+  const [showComparison, setShowComparison] = useState(true)
   if (!data) return <DashboardEmptyState />
 
   const { kpi, monthly, cashByAccount } = data
@@ -113,25 +114,29 @@ export default function TresoreriePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Évolution du solde de trésorerie</CardTitle>
+          <CardTitle>Évolution de la trésorerie</CardTitle>
           <CardDescription>
-            Solde cumulé fin de mois sur la période
+            Solde cumulé fin de mois (aire) et flux net mensuel (barres)
           </CardDescription>
+          {comparisonData ? (
+            <CardAction>
+              <ComparisonToggle
+                active={showComparison}
+                onToggle={() => setShowComparison((v) => !v)}
+              />
+            </CardAction>
+          ) : null}
         </CardHeader>
         <CardContent>
-          <CashBalanceChart monthly={monthly} className="h-[320px] w-full" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Flux net mensuel</CardTitle>
-          <CardDescription>
-            Différence entre encaissements et décaissements chaque mois
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CashFlowChart monthly={monthly} className="h-[280px] w-full" />
+          <CashCombinedChart
+            monthly={monthly}
+            comparison={
+              showComparison && comparisonData
+                ? comparisonData.monthly
+                : undefined
+            }
+            className="h-[360px] w-full"
+          />
         </CardContent>
       </Card>
 
