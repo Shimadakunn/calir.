@@ -11,14 +11,15 @@ import {
 import { Separator } from "@workspace/ui/components/separator"
 import {
   Banknote,
-  CalendarClock,
   Landmark,
   TrendingDown,
   TrendingUp,
+  Wallet,
 } from "lucide-react"
 import { useState } from "react"
 
-import { CashCombinedChart } from "@/components/fec/cash-balance-chart"
+import { CashCombinedChart } from "@/components/fec/cash-combined-chart"
+import { CashProjectionCard } from "@/components/fec/cash-projection-card"
 import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
@@ -34,12 +35,7 @@ export default function TresoreriePage() {
   const [showComparison, setShowComparison] = useState(true)
   if (!data) return <DashboardEmptyState />
 
-  const { kpi, monthly, cashByAccount } = data
-
-  // Solde min et max sur la periode
-  const balances = monthly.map((m) => m.cashBalance)
-  const minBalance = balances.length > 0 ? Math.min(...balances) : 0
-  const maxBalance = balances.length > 0 ? Math.max(...balances) : 0
+  const { kpi, monthly, cashByAccount, cashProjection } = data
 
   // DSO / DPO approximatifs : creances / CA * 365
   const monthsCovered = data.period.monthsCovered
@@ -56,8 +52,16 @@ export default function TresoreriePage() {
       ? (kpi.supplierPayables / annualizedExpenses) * 365
       : 0
 
-  // Mois deficitaires en cash flow
-  const negativeMonths = monthly.filter((m) => m.cashFlow < 0).length
+  // Projection : ce qui va sortir/rentrer + ou aterrit la treso
+  const netEngagement =
+    cashProjection.totalInflows - cashProjection.totalOutflows
+  const isImproving = netEngagement >= 0
+  const projectedTone =
+    cashProjection.projectedCash < 0
+      ? "danger"
+      : cashProjection.projectedCash < kpi.revenue * 0.05
+        ? "warning"
+        : "success"
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 md:px-6">
@@ -71,7 +75,7 @@ export default function TresoreriePage() {
         </p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3">
         <KpiCard
           label="Solde actuel"
           value={<FormattedCurrency value={kpi.cashBalance} />}
@@ -86,29 +90,28 @@ export default function TresoreriePage() {
           hint="Cumul fin de période"
         />
         <KpiCard
-          label="Solde min."
-          value={<FormattedCurrency value={minBalance} />}
-          icon={TrendingDown}
-          hint="Point bas atteint"
-          tone={minBalance < 0 ? "danger" : "default"}
-        />
-        <KpiCard
-          label="Solde max."
-          value={<FormattedCurrency value={maxBalance} />}
-          icon={TrendingUp}
-          hint="Point haut atteint"
-        />
-        <KpiCard
-          label="Mois en flux négatif"
+          label="Net engagé"
           value={
-            <>
-              <FormattedNumber value={negativeMonths} /> /{" "}
-              <FormattedNumber value={monthly.length} />
-            </>
+            <span
+              className={
+                isImproving
+                  ? "text-emerald-600 dark:text-emerald-500"
+                  : "text-destructive"
+              }
+            >
+              {netEngagement > 0 ? "+" : ""}
+              <FormattedCurrency value={netEngagement} />
+            </span>
           }
-          icon={CalendarClock}
-          hint="Sorties > entrées"
-          tone={negativeMonths > monthly.length / 2 ? "warning" : "default"}
+          icon={isImproving ? TrendingUp : TrendingDown}
+          hint="Encaissements échus − décaissements échus"
+        />
+        <KpiCard
+          label="Solde prévisionnel"
+          value={<FormattedCurrency value={cashProjection.projectedCash} />}
+          icon={Wallet}
+          tone={projectedTone}
+          hint="Après règlement des engagements échus"
         />
       </section>
 
@@ -135,10 +138,17 @@ export default function TresoreriePage() {
                 ? comparisonData.monthly
                 : undefined
             }
+            projection={{
+              label: "Prévis.",
+              balance: cashProjection.projectedCash,
+              flow: netEngagement,
+            }}
             className="h-[360px] w-full"
           />
         </CardContent>
       </Card>
+
+      <CashProjectionCard data={cashProjection} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>

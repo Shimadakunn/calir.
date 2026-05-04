@@ -20,11 +20,13 @@ export interface KpiCardProps {
   footer?: ReactNode
 }
 
-const TONE_STYLES: Record<NonNullable<KpiCardProps["tone"]>, string> = {
+// Tone colors the value itself — the data point — rather than a tinted card
+// envelope: keeps the signal exactly where the eye reads the KPI.
+const VALUE_TONE_STYLES: Record<NonNullable<KpiCardProps["tone"]>, string> = {
   default: "",
-  success: "border-emerald-500/30 bg-emerald-500/[0.03]",
-  warning: "border-amber-500/30 bg-amber-500/[0.03]",
-  danger: "border-destructive/30 bg-destructive/[0.04]",
+  success: "text-emerald-600 dark:text-emerald-500",
+  warning: "text-amber-600 dark:text-amber-500",
+  danger: "text-destructive",
 }
 
 const TREND_STYLES: Record<
@@ -47,7 +49,7 @@ export function KpiCard({
   footer,
 }: KpiCardProps) {
   return (
-    <Card className={cn(TONE_STYLES[tone], "gap-3", className)}>
+    <Card className={cn("gap-3", className)}>
       <CardContent className="space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -57,7 +59,12 @@ export function KpiCard({
             <Icon className="size-4 shrink-0 text-muted-foreground" />
           ) : null}
         </div>
-        <p className="font-heading text-3xl font-bold tracking-tight tabular-nums">
+        <p
+          className={cn(
+            "font-heading text-3xl font-bold tracking-tight tabular-nums",
+            VALUE_TONE_STYLES[tone]
+          )}
+        >
           {value}
         </p>
         {trend ? (

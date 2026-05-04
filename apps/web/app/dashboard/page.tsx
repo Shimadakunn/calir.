@@ -21,8 +21,7 @@ import { Suspense } from "react"
 
 import { AgedBalanceCard } from "@/components/fec/aged-balance-card"
 import { BreakevenSection } from "@/components/fec/breakeven-section"
-import { CashBalanceChart } from "@/components/fec/cash-balance-chart"
-import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
+import { CashCombinedChart } from "@/components/fec/cash-combined-chart"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
   FormattedCurrency,
@@ -31,7 +30,6 @@ import {
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyTrendChart } from "@/components/fec/monthly-trend-chart"
 import { ResultBreakdown } from "@/components/fec/result-breakdown"
-import { TopList } from "@/components/fec/top-list"
 import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
 
@@ -45,10 +43,9 @@ function DashboardOverview() {
     monthly,
     expenseCategories,
     revenueCategories,
-    topCustomers,
-    topSuppliers,
     agedReceivables,
     agedPayables,
+    cashProjection,
   } = data
 
   // Calcul du delta CA derniers 3 mois vs 3 precedents
@@ -183,8 +180,8 @@ function DashboardOverview() {
       </section>
 
       {/* === Tendance mensuelle === */}
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <section>
+        <Card>
           <CardHeader>
             <CardTitle>Revenus vs charges</CardTitle>
             <CardDescription>
@@ -195,13 +192,30 @@ function DashboardOverview() {
             <MonthlyTrendChart monthly={monthly} className="h-[280px] w-full" />
           </CardContent>
         </Card>
+      </section>
 
+      {/* === Seuil de rentabilité === */}
+      <section>
+        <BreakevenSection kpi={kpi} />
+      </section>
+
+      {/* === Balance âgée clients & fournisseurs === */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <AgedBalanceCard type="clients" data={agedReceivables} compact />
+        <AgedBalanceCard type="fournisseurs" data={agedPayables} compact />
+      </section>
+
+      {/* === Évolution de la trésorerie (historique + projeté) === */}
+      <section>
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle>Trésorerie</CardTitle>
-                <CardDescription>Solde fin de mois</CardDescription>
+                <CardTitle>Évolution de la trésorerie</CardTitle>
+                <CardDescription>
+                  Solde cumulé fin de mois (aire) et flux net mensuel (barres) ·
+                  point pointillé = projeté après engagements échus
+                </CardDescription>
               </div>
               <Button
                 variant="ghost"
@@ -214,133 +228,15 @@ function DashboardOverview() {
             </div>
           </CardHeader>
           <CardContent>
-            <CashBalanceChart monthly={monthly} className="h-[280px] w-full" />
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* === Seuil de rentabilité === */}
-      <section>
-        <BreakevenSection kpi={kpi} />
-      </section>
-
-      {/* === Balance âgée clients & fournisseurs === */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <AgedBalanceCard type="clients" data={agedReceivables} />
-        <AgedBalanceCard type="fournisseurs" data={agedPayables} />
-      </section>
-
-      {/* === Charges + clients === */}
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle>Répartition des charges</CardTitle>
-                <CardDescription>Où part votre argent</CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link href="/dashboard/charges" />}
-              >
-                Détail
-                <ArrowRight />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {expenseCategories.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-[1fr_1fr] sm:items-center">
-                <CategoryDonutChart
-                  data={expenseCategories}
-                  total={kpi.expenses}
-                  centerLabel="charges"
-                  className="h-[220px] w-full"
-                />
-                <div className="space-y-2">
-                  {expenseCategories.slice(0, 5).map((cat) => (
-                    <div
-                      key={cat.key}
-                      className="flex items-center gap-2.5 text-sm"
-                    >
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ background: cat.fill }}
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {cat.label}
-                      </span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {cat.share.toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                Pas de charges à afficher
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle>Top clients</CardTitle>
-                <CardDescription>
-                  Vos plus gros contributeurs au CA
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link href="/dashboard/clients" />}
-              >
-                Détail
-                <ArrowRight />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <TopList
-              items={topCustomers}
-              showCount={5}
-              emptyLabel="Aucun client identifié"
-            />
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* === Top fournisseurs === */}
-      <section>
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle>Top fournisseurs</CardTitle>
-                <CardDescription>
-                  Vos plus gros postes de dépense — leviers de négociation
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link href="/dashboard/fournisseurs" />}
-              >
-                Détail
-                <ArrowRight />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <TopList
-              items={topSuppliers}
-              showCount={5}
-              emptyLabel="Aucun fournisseur identifié"
+            <CashCombinedChart
+              monthly={monthly}
+              projection={{
+                label: "Prévis.",
+                balance: cashProjection.projectedCash,
+                flow:
+                  cashProjection.totalInflows - cashProjection.totalOutflows,
+              }}
+              className="h-[360px] w-full"
             />
           </CardContent>
         </Card>

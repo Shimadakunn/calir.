@@ -18,6 +18,9 @@ import {
 } from "./analytics"
 import { parseFecFile } from "./parser"
 
+// v6 (2026-05) : ajout de cashProjection (projection de tresorerie a court
+// terme : solde actuel +/- engagements echus envers fournisseurs / Etat /
+// personnel / organismes sociaux).
 // v5 (2026-05) : ajout de notDuePartyCount dans AgedBalance pour symetriser
 // avec overduePartyCount (nb de tiers ayant des factures non echues).
 // v4 (2026-05) : ajout de la balance agee (agedReceivables, agedPayables) avec
@@ -27,9 +30,9 @@ import { parseFecFile } from "./parser"
 // v2 (2026-05) : refonte de la categorisation des comptes
 // (Couts fixes/RH/Variables/... au lieu des classes PCG 60-69).
 // Les utilisateurs avec un snapshot anterieur devront re-importer leur FEC.
-const STORAGE_KEY = "clair.fec.dashboard.v5"
+const STORAGE_KEY = "clair.fec.dashboard.v6"
 // Slot secondaire pour la comparaison entre deux FEC (meme schema, meme version).
-const COMPARISON_STORAGE_KEY = "clair.fec.dashboard.comparison.v5"
+const COMPARISON_STORAGE_KEY = "clair.fec.dashboard.comparison.v6"
 
 interface SerializedSnapshot {
   meta: DashboardData["meta"]
@@ -73,6 +76,9 @@ interface SerializedSnapshot {
     asOf: string
   }
   agedPayables: Omit<DashboardData["agedPayables"], "asOf"> & {
+    asOf: string
+  }
+  cashProjection: Omit<DashboardData["cashProjection"], "asOf"> & {
     asOf: string
   }
   warnings: string[]
@@ -131,6 +137,10 @@ function serialize(data: DashboardData): SerializedSnapshot {
       ...data.agedPayables,
       asOf: data.agedPayables.asOf.toISOString(),
     },
+    cashProjection: {
+      ...data.cashProjection,
+      asOf: data.cashProjection.asOf.toISOString(),
+    },
     warnings: data.warnings,
   }
 }
@@ -187,6 +197,10 @@ function deserialize(snap: SerializedSnapshot): DashboardData {
     agedPayables: {
       ...snap.agedPayables,
       asOf: new Date(snap.agedPayables.asOf),
+    },
+    cashProjection: {
+      ...snap.cashProjection,
+      asOf: new Date(snap.cashProjection.asOf),
     },
     warnings: snap.warnings,
   }

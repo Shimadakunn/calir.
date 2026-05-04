@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@workspace/ui/components/button"
 import {
   Card,
   CardContent,
@@ -14,7 +15,8 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip"
 import { cn } from "@workspace/ui/lib/utils"
-import { ReceiptText, Users } from "lucide-react"
+import { ArrowRight, ReceiptText, Users } from "lucide-react"
+import Link from "next/link"
 
 import { FormattedCurrency } from "@/components/fec/formatted-number"
 import type { AgedBalance, AgedBalanceBucket } from "@/lib/fec/analytics"
@@ -29,10 +31,11 @@ type PartyType = "clients" | "fournisseurs"
 interface AgedBalanceCardProps {
   type: PartyType
   data: AgedBalance
+  compact?: boolean
 }
 
 const BUCKET_COLOR: Record<AgedBalanceBucket["key"], string> = {
-  notDue: "var(--muted-foreground)",
+  notDue: "var(--bar-neutral)",
   "0_30": "var(--expense-1)",
   "31_60": "var(--expense-3)",
   "60plus": "var(--expense-5)",
@@ -50,7 +53,11 @@ function formatDaysOverdue(days: number): string {
   return `${String(days)} j de retard`
 }
 
-export function AgedBalanceCard({ type, data }: AgedBalanceCardProps) {
+export function AgedBalanceCard({
+  type,
+  data,
+  compact = false,
+}: AgedBalanceCardProps) {
   const isClients = type === "clients"
   const partyWord = isClients ? "client" : "fournisseur"
   const Icon = isClients ? Users : ReceiptText
@@ -59,6 +66,9 @@ export function AgedBalanceCard({ type, data }: AgedBalanceCardProps) {
   const emptyLabel = isClients
     ? "Aucun retard de paiement client."
     : "Aucune facture fournisseur en retard."
+  const detailHref = isClients
+    ? "/dashboard/clients"
+    : "/dashboard/fournisseurs"
 
   return (
     <Card className="flex flex-col">
@@ -72,7 +82,18 @@ export function AgedBalanceCard({ type, data }: AgedBalanceCardProps) {
               encours
             </CardDescription>
           </div>
-          <Icon className="size-4 shrink-0 text-muted-foreground" />
+          {compact ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              render={<Link href={detailHref} />}
+            >
+              Détail
+              <ArrowRight />
+            </Button>
+          ) : (
+            <Icon className="size-4 shrink-0 text-muted-foreground" />
+          )}
         </div>
       </CardHeader>
 
@@ -112,39 +133,59 @@ export function AgedBalanceCard({ type, data }: AgedBalanceCardProps) {
         {/* Barre stackee par tranche d'aging */}
         <AgingBar buckets={data.buckets} totalAmount={data.totalAmount} />
 
-        {/* Top a relancer / payer */}
-        <div className="flex-1 space-y-2">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            {overdueLabel}
-          </p>
-          {data.topOverdueParties.length > 0 ? (
-            <ul className="space-y-1.5">
-              {data.topOverdueParties.map((p) => (
-                <li
-                  key={p.accountNum}
-                  className="flex items-baseline justify-between gap-3 text-sm"
-                >
-                  <span className="min-w-0 flex-1 truncate" title={p.label}>
-                    {p.label}
-                  </span>
-                  <span
-                    className="font-mono font-medium tabular-nums"
-                    title={formatEuro(p.overdueAmount)}
-                  >
-                    {formatEuroCompact(p.overdueAmount)}
-                  </span>
-                  <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                    {formatDaysOverdue(p.oldestDaysOverdue)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">{emptyLabel}</p>
-          )}
-        </div>
+        {/* Top a relancer / payer — masque en mode compact (page /dashboard) */}
+        {!compact && (
+          <OverdueList
+            parties={data.topOverdueParties}
+            label={overdueLabel}
+            emptyLabel={emptyLabel}
+          />
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+function OverdueList({
+  parties,
+  label,
+  emptyLabel,
+}: {
+  parties: AgedBalance["topOverdueParties"]
+  label: string
+  emptyLabel: string
+}) {
+  return (
+    <div className="flex-1 space-y-2">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </p>
+      {parties.length > 0 ? (
+        <ul className="space-y-1.5">
+          {parties.map((p) => (
+            <li
+              key={p.accountNum}
+              className="flex items-baseline justify-between gap-3 text-sm"
+            >
+              <span className="min-w-0 flex-1 truncate" title={p.label}>
+                {p.label}
+              </span>
+              <span
+                className="font-mono font-medium tabular-nums"
+                title={formatEuro(p.overdueAmount)}
+              >
+                {formatEuroCompact(p.overdueAmount)}
+              </span>
+              <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                {formatDaysOverdue(p.oldestDaysOverdue)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+      )}
+    </div>
   )
 }
 
@@ -166,19 +207,29 @@ function AgingBar({
 
   return (
     <TooltipProvider>
-      <div
-        className="flex h-20 w-full overflow-hidden rounded-2xl border border-border/40 bg-muted/30"
-        role="img"
-        aria-label="Répartition par tranche d'âge"
-      >
-        {visibleBuckets.map((b, idx) => (
-          <AgingSegment
-            key={b.key}
-            bucket={b}
-            totalAmount={totalAmount}
-            isFirst={idx === 0}
-          />
-        ))}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Encours total
+          </span>
+          <span className="font-mono text-sm font-semibold tabular-nums">
+            <FormattedCurrency value={totalAmount} />
+          </span>
+        </div>
+        <div
+          className="flex h-20 w-full overflow-hidden rounded-2xl border border-border/40 bg-muted/30"
+          role="img"
+          aria-label="Répartition par tranche d'âge"
+        >
+          {visibleBuckets.map((b, idx) => (
+            <AgingSegment
+              key={b.key}
+              bucket={b}
+              totalAmount={totalAmount}
+              isFirst={idx === 0}
+            />
+          ))}
+        </div>
       </div>
     </TooltipProvider>
   )
@@ -222,11 +273,9 @@ function AgingSegment({
         <div className="flex flex-col gap-0.5 text-xs">
           <span className="font-semibold">{bucket.label}</span>
           <span className="font-mono tabular-nums opacity-80">
+            <FormattedCurrency value={bucket.amount} tooltip={false} /> ·{" "}
             {bucket.count} {pluralize(bucket.count, "facture")} ·{" "}
-            <FormattedCurrency value={bucket.amount} tooltip={false} />
-          </span>
-          <span className="font-mono tabular-nums opacity-80">
-            {sharePct.toFixed(1)}% du total
+            {sharePct.toFixed(1)}%
           </span>
         </div>
       </TooltipContent>

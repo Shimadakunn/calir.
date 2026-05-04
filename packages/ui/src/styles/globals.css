@@ -49,6 +49,10 @@
   --expense-5: #9f2d00;
   --result: oklch(0.6 0.2 155);
   --result-loss: oklch(0.58 0.22 22);
+  /* Gris doux pour segments "neutres" dans les bar charts (ex. tranche non echu
+     de la balance agee). --muted-foreground est trop contraste : tune pour du
+     texte, pas pour une surface de fond. */
+  --bar-neutral: oklch(0.74 0.012 213.5);
   --radius: 0.625rem;
   --sidebar: oklch(0.987 0.002 197.1);
   --sidebar-foreground: oklch(0.148 0.004 228.8);
@@ -89,6 +93,7 @@
      Seuls --result/--result-loss sont decales pour preserver la visibilite sur fond sombre. */
   --result: oklch(0.7 0.18 155);
   --result-loss: oklch(0.65 0.21 22);
+  --bar-neutral: oklch(0.42 0.01 214.4);
   --sidebar: oklch(0.218 0.008 223.9);
   --sidebar-foreground: oklch(0.987 0.002 197.1);
   --sidebar-primary: oklch(0.623 0.214 259.815);

@@ -218,6 +218,24 @@ export function isAmortizationAccount(compteNum: string): boolean {
   return compteNum.trim().startsWith("68")
 }
 
+// Comptes de bilan utilises pour la projection de tresorerie : on regarde leur
+// solde a date pour estimer ce qui va sortir/rentrer en caisse a court terme.
+
+export function isVatAccount(compteNum: string): boolean {
+  // 445 = Etat - Taxes sur le chiffre d'affaires (TVA collectee, deductible, a decaisser)
+  return compteNum.trim().startsWith("445")
+}
+
+export function isSalaryPayableAccount(compteNum: string): boolean {
+  // 421 = Personnel - Remunerations dues (salaires nets a payer aux employes)
+  return compteNum.trim().startsWith("421")
+}
+
+export function isSocialChargePayableAccount(compteNum: string): boolean {
+  // 43 = Securite sociale et autres organismes sociaux (URSSAF, mutuelle, retraite)
+  return compteNum.trim().startsWith("43")
+}
+
 export function getExpenseCategory(compteNum: string): ExpenseCategory | null {
   const t = compteNum.trim()
   for (const rule of EXPENSE_LOOKUP)

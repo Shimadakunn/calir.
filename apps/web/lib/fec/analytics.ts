@@ -23,6 +23,7 @@ import {
   computeAgedPayables,
   computeAgedReceivables,
 } from "./aged-balance"
+import { type CashProjection, computeCashProjection } from "./cash-projection"
 import { formatEuro } from "./format"
 import type { FecEntry, FecParseResult } from "./types"
 
@@ -100,6 +101,7 @@ export type {
   AgedBalanceBucket,
   AgedBalanceCounterparty,
 } from "./aged-balance"
+export type { CashProjection } from "./cash-projection"
 
 export interface ActionableInsight {
   id: string
@@ -132,6 +134,7 @@ export interface DashboardData {
   cashByAccount: TopCounterparty[]
   agedReceivables: AgedBalance
   agedPayables: AgedBalance
+  cashProjection: CashProjection
   warnings: string[]
 }
 
@@ -725,6 +728,12 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
   const agedReceivables = computeAgedReceivables(entries, period.endDate)
   const agedPayables = computeAgedPayables(entries, period.endDate)
 
+  const cashProjection = computeCashProjection(entries, period.endDate, {
+    currentCash: kpi.cashBalance,
+    overduePayables: agedPayables.overdueAmount,
+    overdueReceivables: agedReceivables.overdueAmount,
+  })
+
   const insights = computeInsights(
     kpi,
     expenseCategories,
@@ -748,6 +757,7 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
     cashByAccount,
     agedReceivables,
     agedPayables,
+    cashProjection,
     warnings,
   }
 }
