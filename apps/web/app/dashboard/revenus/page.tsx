@@ -13,6 +13,7 @@ import { useState } from "react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
+import { CategoryTable } from "@/components/fec/category-table"
 import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyBarChart } from "@/components/fec/monthly-bar-chart"
+import { ResultBreakdown } from "@/components/fec/result-breakdown"
 import { TopList } from "@/components/fec/top-list"
 import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
@@ -96,6 +98,23 @@ export default function RevenusPage() {
           }
         />
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Composition des revenus</CardTitle>
+          <CardDescription>
+            La part de chaque catégorie comptable dans votre chiffre d'affaires
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <ResultBreakdown
+            variant="revenue"
+            revenueCategories={revenueCategories}
+            revenue={kpi.revenue}
+          />
+          <CategoryTable items={revenueCategories} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -12,12 +12,15 @@ import { useMemo } from "react"
 import { FormattedCurrency } from "@/components/fec/formatted-number"
 import type { CategoryBreakdown } from "@/lib/fec/analytics"
 
+type ResultBreakdownVariant = "both" | "revenue" | "expenses"
+
 interface ResultBreakdownProps {
-  revenueCategories: CategoryBreakdown[]
-  expenseCategories: CategoryBreakdown[]
-  revenue: number
-  expenses: number
-  netResult: number
+  revenueCategories?: CategoryBreakdown[]
+  expenseCategories?: CategoryBreakdown[]
+  revenue?: number
+  expenses?: number
+  netResult?: number
+  variant?: ResultBreakdownVariant
   className?: string
 }
 
@@ -34,67 +37,146 @@ interface BarSegment {
 
 const MIN_INLINE_PCT = 8 // segments narrower than this hide their inline label
 
-export function ResultBreakdown({
-  revenueCategories,
-  expenseCategories,
+function buildRevenueSegments({
+  categories,
   revenue,
   expenses,
+  baseTotal,
+  withLossCap,
+}: {
+  categories: CategoryBreakdown[]
+  revenue: number
+  expenses: number
+  baseTotal: number
+  withLossCap: boolean
+}): BarSegment[] {
+  if (baseTotal <= 0) return []
+  const segments: BarSegment[] = categories.map((c) => ({
+    key: `rev-${c.key}`,
+    label: c.label,
+    amount: c.amount,
+    shareOfTotal: (c.amount / baseTotal) * 100,
+    shareOfBucket: c.share,
+    fill: c.fill ?? "var(--revenue-3)",
+  }))
+  if (withLossCap) {
+    // Loss : on ajoute un cap rouge a droite pour egaler la longueur des charges.
+    const lossAmount = expenses - revenue
+    segments.push({
+      key: "rev-loss-cap",
+      label: "Perte nette",
+      amount: lossAmount,
+      shareOfTotal: (lossAmount / baseTotal) * 100,
+      shareOfBucket: revenue > 0 ? (lossAmount / revenue) * 100 : 100,
+      fill: "var(--result-loss)",
+      isLossCap: true,
+    })
+  }
+  return segments
+}
+
+function buildExpenseSegments({
+  categories,
+  expenses,
   netResult,
+  baseTotal,
+  withResultCap,
+}: {
+  categories: CategoryBreakdown[]
+  expenses: number
+  netResult: number
+  baseTotal: number
+  withResultCap: boolean
+}): BarSegment[] {
+  if (baseTotal <= 0) return []
+  const segments: BarSegment[] = categories.map((c) => ({
+    key: `exp-${c.key}`,
+    label: c.label,
+    amount: c.amount,
+    shareOfTotal: (c.amount / baseTotal) * 100,
+    shareOfBucket: c.share,
+    fill: c.fill ?? "var(--expense-3)",
+  }))
+  if (withResultCap) {
+    // Profit : cap vert a droite, qui represente le resultat net.
+    segments.push({
+      key: "exp-result-cap",
+      label: "Résultat net",
+      amount: netResult,
+      shareOfTotal: (netResult / baseTotal) * 100,
+      shareOfBucket: expenses > 0 ? (netResult / expenses) * 100 : 100,
+      fill: "var(--result)",
+      isResultCap: true,
+    })
+  }
+  return segments
+}
+
+export function ResultBreakdown({
+  revenueCategories = [],
+  expenseCategories = [],
+  revenue = 0,
+  expenses = 0,
+  netResult = 0,
+  variant = "both",
   className,
 }: ResultBreakdownProps) {
-  const baseTotal = Math.max(revenue, expenses)
+  // En mode "both" les deux barres partagent la meme echelle pour etre
+  // visuellement comparables. En mode mono-barre, on remplit toute la largeur
+  // a partir du total propre du bucket.
+  const baseTotal =
+    variant === "revenue"
+      ? revenue
+      : variant === "expenses"
+        ? expenses
+        : Math.max(revenue, expenses)
   const isProfit = netResult >= 0
+  const showRevenue = variant !== "expenses"
+  const showExpenses = variant !== "revenue"
 
-  const revenueSegments = useMemo<BarSegment[]>(() => {
-    if (baseTotal <= 0) return []
-    const segments: BarSegment[] = revenueCategories.map((c) => ({
-      key: `rev-${c.key}`,
-      label: c.label,
-      amount: c.amount,
-      shareOfTotal: (c.amount / baseTotal) * 100,
-      shareOfBucket: c.share,
-      fill: c.fill ?? "var(--revenue-3)",
-    }))
-    if (!isProfit) {
-      // Loss : on ajoute un cap rouge a droite pour egaler la longueur des charges.
-      const lossAmount = expenses - revenue
-      segments.push({
-        key: "rev-loss-cap",
-        label: "Perte nette",
-        amount: lossAmount,
-        shareOfTotal: (lossAmount / baseTotal) * 100,
-        shareOfBucket: revenue > 0 ? (lossAmount / revenue) * 100 : 100,
-        fill: "var(--result-loss)",
-        isLossCap: true,
-      })
-    }
-    return segments
-  }, [revenueCategories, revenue, expenses, baseTotal, isProfit])
+  const revenueSegments = useMemo<BarSegment[]>(
+    () =>
+      showRevenue
+        ? buildRevenueSegments({
+            categories: revenueCategories,
+            revenue,
+            expenses,
+            baseTotal,
+            withLossCap: variant === "both" && !isProfit,
+          })
+        : [],
+    [
+      showRevenue,
+      revenueCategories,
+      revenue,
+      expenses,
+      baseTotal,
+      isProfit,
+      variant,
+    ]
+  )
 
-  const expenseSegments = useMemo<BarSegment[]>(() => {
-    if (baseTotal <= 0) return []
-    const segments: BarSegment[] = expenseCategories.map((c) => ({
-      key: `exp-${c.key}`,
-      label: c.label,
-      amount: c.amount,
-      shareOfTotal: (c.amount / baseTotal) * 100,
-      shareOfBucket: c.share,
-      fill: c.fill ?? "var(--expense-3)",
-    }))
-    if (isProfit) {
-      // Profit : cap vert a droite, qui represente le resultat net.
-      segments.push({
-        key: "exp-result-cap",
-        label: "Résultat net",
-        amount: netResult,
-        shareOfTotal: (netResult / baseTotal) * 100,
-        shareOfBucket: expenses > 0 ? (netResult / expenses) * 100 : 100,
-        fill: "var(--result)",
-        isResultCap: true,
-      })
-    }
-    return segments
-  }, [expenseCategories, expenses, netResult, baseTotal, isProfit])
+  const expenseSegments = useMemo<BarSegment[]>(
+    () =>
+      showExpenses
+        ? buildExpenseSegments({
+            categories: expenseCategories,
+            expenses,
+            netResult,
+            baseTotal,
+            withResultCap: variant === "both" && isProfit,
+          })
+        : [],
+    [
+      showExpenses,
+      expenseCategories,
+      expenses,
+      netResult,
+      baseTotal,
+      isProfit,
+      variant,
+    ]
+  )
 
   if (baseTotal <= 0) {
     return (
@@ -107,18 +189,22 @@ export function ResultBreakdown({
   return (
     <TooltipProvider>
       <div className={cn("space-y-4", className)}>
-        <BarRow
-          label="Produits"
-          total={revenue}
-          accent="text-[var(--revenue)]"
-          segments={revenueSegments}
-        />
-        <BarRow
-          label="Charges"
-          total={expenses}
-          accent="text-[var(--expense)]"
-          segments={expenseSegments}
-        />
+        {showRevenue ? (
+          <BarRow
+            label="Produits"
+            total={revenue}
+            accent="text-[var(--revenue)]"
+            segments={revenueSegments}
+          />
+        ) : null}
+        {showExpenses ? (
+          <BarRow
+            label="Charges"
+            total={expenses}
+            accent="text-[var(--expense)]"
+            segments={expenseSegments}
+          />
+        ) : null}
       </div>
     </TooltipProvider>
   )

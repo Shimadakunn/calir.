@@ -13,11 +13,13 @@ import { useState } from "react"
 
 import { CategoryBarList } from "@/components/fec/category-bar-list"
 import { CategoryDonutChart } from "@/components/fec/category-donut-chart"
+import { CategoryTable } from "@/components/fec/category-table"
 import { ComparisonToggle } from "@/components/fec/comparison-toggle"
 import { DashboardEmptyState } from "@/components/fec/empty-state"
 import { FormattedCurrency } from "@/components/fec/formatted-number"
 import { KpiCard } from "@/components/fec/kpi-card"
 import { MonthlyBarChart } from "@/components/fec/monthly-bar-chart"
+import { ResultBreakdown } from "@/components/fec/result-breakdown"
 import { TopList } from "@/components/fec/top-list"
 import { formatPercent } from "@/lib/fec/format"
 import { useFecStore } from "@/lib/fec/store"
@@ -74,6 +76,23 @@ export default function ChargesPage() {
           hint={`${formatPercent(externalRatio)} du CA`}
         />
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Composition des charges</CardTitle>
+          <CardDescription>
+            La part de chaque catégorie comptable dans vos dépenses
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <ResultBreakdown
+            variant="expenses"
+            expenseCategories={expenseCategories}
+            expenses={kpi.expenses}
+          />
+          <CategoryTable items={expenseCategories} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
