@@ -18,6 +18,8 @@ import {
 } from "./analytics"
 import { parseFecFile } from "./parser"
 
+// v7 (2026-05) : rattachement des comptes au plan de comptes officiel 2026 et
+// separation des categories metier clair.
 // v6 (2026-05) : ajout de cashProjection (projection de tresorerie a court
 // terme : solde actuel +/- engagements echus envers fournisseurs / Etat /
 // personnel / organismes sociaux).
@@ -30,9 +32,9 @@ import { parseFecFile } from "./parser"
 // v2 (2026-05) : refonte de la categorisation des comptes
 // (Couts fixes/RH/Variables/... au lieu des classes PCG 60-69).
 // Les utilisateurs avec un snapshot anterieur devront re-importer leur FEC.
-const STORAGE_KEY = "clair.fec.dashboard.v6"
+const STORAGE_KEY = "clair.fec.dashboard.v7"
 // Slot secondaire pour la comparaison entre deux FEC (meme schema, meme version).
-const COMPARISON_STORAGE_KEY = "clair.fec.dashboard.comparison.v6"
+const COMPARISON_STORAGE_KEY = "clair.fec.dashboard.comparison.v7"
 
 interface SerializedSnapshot {
   meta: DashboardData["meta"]

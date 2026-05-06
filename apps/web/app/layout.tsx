@@ -6,6 +6,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google"
 
+import { LocatorRuntime } from "@/components/locator-runtime"
 import { ThemeProvider } from "@/components/theme-provider"
 import { FecStoreProvider } from "@/lib/fec/store"
 
@@ -21,6 +22,11 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+const locatorTarget =
+  process.env.NODE_ENV === "development"
+    ? "zed://file${projectPath}${filePath}:${line}:${column}"
+    : undefined
+
 export const metadata: Metadata = {
   title: "Clair · La santé de votre entreprise, en clair",
   description:
@@ -35,6 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
+      data-locator-target={locatorTarget}
       suppressHydrationWarning
       className={cn(
         "antialiased",
@@ -45,6 +52,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-svh bg-background">
+        <LocatorRuntime />
         <ThemeProvider>
           <TooltipProvider delay={150}>
             <FecStoreProvider>{children}</FecStoreProvider>

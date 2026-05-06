@@ -25,6 +25,7 @@ import {
 } from "./aged-balance"
 import { type CashProjection, computeCashProjection } from "./cash-projection"
 import { formatEuro } from "./format"
+import { resolvePlanComptableEntry } from "./plan-comptable-2026"
 import type { FecEntry, FecParseResult } from "./types"
 
 export interface PeriodInfo {
@@ -155,6 +156,26 @@ const EXPENSE_RAMP = [
   "var(--expense-2)",
   "var(--expense-1)",
 ]
+
+function computeOfficialPlanWarnings(entries: FecEntry[]): string[] {
+  const unknownAccounts = new Map<string, string>()
+  for (const entry of entries) {
+    if (resolvePlanComptableEntry(entry.compteNum)) continue
+    if (!unknownAccounts.has(entry.compteNum))
+      unknownAccounts.set(entry.compteNum, entry.compteLib)
+  }
+
+  if (unknownAccounts.size === 0) return []
+
+  const preview = Array.from(unknownAccounts.entries())
+    .slice(0, 8)
+    .map(([code, label]) => (label ? `${code} (${label})` : code))
+  const suffix = unknownAccounts.size > preview.length ? ", ..." : ""
+
+  return [
+    `${unknownAccounts.size} compte(s) non rattaché(s) au plan de comptes officiel 2026 : ${preview.join(", ")}${suffix}. Ces comptes sont exclus des catégories métier.`,
+  ]
+}
 
 // Helpers exposes pour reattribuer les fills apres deserialisation.
 // Le `fill` est de la presentation, pas de la donnee : on ne le persiste pas.
@@ -681,6 +702,7 @@ function computeInsights(
 
 export function buildDashboardData(parseResult: FecParseResult): DashboardData {
   const { entries, meta, warnings } = parseResult
+  const planWarnings = computeOfficialPlanWarnings(entries)
 
   const period = computePeriod(entries)
   const kpi = computeKpi(entries)
@@ -758,7 +780,7 @@ export function buildDashboardData(parseResult: FecParseResult): DashboardData {
     agedReceivables,
     agedPayables,
     cashProjection,
-    warnings,
+    warnings: [...warnings, ...planWarnings],
   }
 }
 
